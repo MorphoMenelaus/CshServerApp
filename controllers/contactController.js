@@ -1,24 +1,64 @@
+const pool = require("../connection/dbConnection");
+
 // @desc GET all contacts
 // @route GET /api/contacts
 // @access public
-const getContacts = (req, res) => {
-	// try { } catch (e) { }
-	res.status(200).json({ message: "Get all contacts" });
+const getContacts = async (req, res) => {
+	let conn;
+	try {
+		// Get a connection from the pool
+		conn = await pool.getConnection();
+
+		// Execute the query
+		const rows = await conn.query("SELECT * FROM users ORDER BY userName DESC LIMIT 10");
+
+		// Send the JSON response
+		res.status(200).json(rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Database query failed" });
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
+	}
 }
 
 // @desc Create new contacts
 // @route POST /api/contacts
 // @access public
-const createContact = (req, res) => {
+const createContact = async (req, res) => {
+
+	const { userName, password } = req.body;
+	let conn;
 	try {
-		const { name, email, phone, designation } = req.body;
-		if (!name || !email || !phone || !designation) {
-			res.status(400);
-			throw new Error("All fields are requied");
-		}
-		res.status(201).json({ message: "Create new contact" });
+		// Validate inputs
+		// if (!userName || !password) {
+		// 	res.status(400);
+		// 	throw new Error("All fields are requied");
+		// }
+
+		// Get a connection from the pool
+		conn = await pool.getConnection();
+
+		// Paceholders (?) to securely neutralize SQL injection risks
+		const result = await conn.query(
+			"INSERT INTO users (userName, password) VALUES (?, ?)",
+			[userName, password]
+		);
+
+		console.log(result);
+
+		res.status(201).json({
+			message: "User created successfully",
+			insertId: Number(result.insertId)
+		});
+
+		// res.status(201).json({ message: "Create new contact" });
 	} catch (error) {
 		res.status(500).json({ error: error.message });
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
 	}
 }
 
