@@ -1,0 +1,22 @@
+{
+	"name": "cshserverapp",
+	"version": "1.0.0",
+	"description": "Backend NodeJS based server application",
+	"license": "ISC",
+	"author": "Hardwick Design",
+	"type": "commonjs",
+	"main": "server.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "node server.js",
+		"dev": "nodemon server.js"
+	},
+	"dependencies": {
+		"dotenv": "^17.4.2",
+		"express": "^5.2.1",
+		"mariadb": "^3.5.2"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.14"
+	}
+}
