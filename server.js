@@ -16,6 +16,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/contacts", require("./routes/contactRoutes"));
+app.use("/api/serverInfo", require("./routes/serverInfoRoutes"));
 app.use(errorHandler);
 
 const port = process.env.port || 3000;
