@@ -12,6 +12,11 @@ const getContacts = async (req, res) => {
 		// Execute the query
 		const rows = await conn.query("SELECT * FROM users ORDER BY userName DESC LIMIT 10");
 
+		rows.forEach(row => {
+			// password should never be shown in this response
+			row = delete row.password;
+		});
+
 		// Send the JSON response
 		res.status(200).json(rows);
 	} catch (error) {
@@ -30,12 +35,13 @@ const createContact = async (req, res) => {
 
 	const { userName, password } = req.body;
 	let conn;
+
 	try {
 		// Validate inputs
-		// if (!userName || !password) {
-		// 	res.status(400);
-		// 	throw new Error("All fields are requied");
-		// }
+		if (!userName || !password) {
+			res.status(400);
+			throw new Error("All fields are requied");
+		}
 
 		// Get a connection from the pool
 		conn = await pool.getConnection();
@@ -65,8 +71,27 @@ const createContact = async (req, res) => {
 // @desc GET contacts
 // @route GET /api/contacts/:id
 // @access public
-const getContact = (req, res) => {
-	res.status(200).json({ message: `Get contact for ${req.params.id}` });
+const getContact = async (req, res) => {
+	let conn;
+	try {
+		// Get a connection from the pool
+		conn = await pool.getConnection();
+
+		console.log(req.params.id);
+
+		// Execute the query
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+
+		// Send the JSON response
+		res.status(200).json(rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Database query failed" });
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
+	}
+	// res.status(200).json({ message: `Get contact for ${req.params.id}` });
 }
 
 // @desc Update contacts

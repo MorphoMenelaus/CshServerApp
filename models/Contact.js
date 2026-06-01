@@ -1,28 +1,50 @@
 const mariadb = require('mariadb');
 
-const contactSchema = {
-	name: {
+const userSchema = {
+	userId: {
 		type: String,
-		required: [true, "Please add the contact name"]
+		unique: true
+	},
+	userName: {
+		type: String,
+		required: [true, "Please add the user name"]
+	},
+	isAdmin: {
+		type: Boolean,
+	},
+	siteAdmin: {
+		type: Boolean,
+	},
+	siteEditor: {
+		type: Boolean,
+	},
+	isContributor: {
+		type: Boolean,
+	},
+	userNotes: {
+		type: String
+	}
+}
+
+const userPreferencesSchema = {
+	userId: {
+		type: String,
+		unique: true
+	},
+	userName: {
+		type: String,
+		required: [true, "Please add the user name"]
 	},
 	email: {
 		type: String,
-		unique: true,
-		required: [true, "Please add the contact email"]
-	}
-	,
-	phone: {
+	},
+	lastName: {
 		type: String,
-		required: [true, "Please add the contact phone"]
-	}
-	,
-	designation: {
+	},
+	firstName: {
 		type: String,
-		required: [true, "Please add the contact designation"]
-	}
-	,
-	name: {
-		type: String,
-		required: [true, "Please add the contact name"]
-	}
+	},
+	uiDarkMode: {
+		type: Boolean,
+	},
 }
