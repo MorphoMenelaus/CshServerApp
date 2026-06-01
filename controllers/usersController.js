@@ -1,9 +1,9 @@
 const pool = require("../connection/dbConnection");
 
-// @desc GET all contacts
-// @route GET /api/contacts
+// @desc GET all users
+// @route GET /api/users
 // @access public
-const getContacts = async (req, res) => {
+const getUsers = async (req, res) => {
 	let conn;
 	try {
 		// Get a connection from the pool
@@ -28,10 +28,10 @@ const getContacts = async (req, res) => {
 	}
 }
 
-// @desc Create new contacts
-// @route POST /api/contacts
+// @desc Create new user
+// @route POST /api/users
 // @access public
-const createContact = async (req, res) => {
+const createUser = async (req, res) => {
 
 	const { userName, password } = req.body;
 	let conn;
@@ -68,10 +68,10 @@ const createContact = async (req, res) => {
 	}
 }
 
-// @desc GET contacts
-// @route GET /api/contacts/:id
+// @desc GET user
+// @route GET /api/users/:id
 // @access public
-const getContact = async (req, res) => {
+const getUser = async (req, res) => {
 	let conn;
 	try {
 		// Get a connection from the pool
@@ -99,18 +99,44 @@ const getContact = async (req, res) => {
 	// res.status(200).json({ message: `Get contact for ${req.params.id}` });
 }
 
-// @desc Update contacts
-// @route PUT /api/contacts/:id
+// @desc GET user preferences
+// @route GET /api/users/prefs/:id
 // @access public
-const updateContact = (req, res) => {
+const getUserPreferences = async (req, res) => {
+	let conn;
+	try {
+		// Get a connection from the pool
+		conn = await pool.getConnection();
+
+		console.log(req.params.id);
+
+		// Execute the query
+		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = "${req.params.id}"`);
+
+		// Send the JSON response
+		res.status(200).json(rows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Database query failed" });
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
+	}
+	// res.status(200).json({ message: `Get contact for ${req.params.id}` });
+}
+
+// @desc Update user
+// @route PUT /api/users/:id
+// @access public
+const updateUser = (req, res) => {
 	res.status(200).json({ message: `Update contact for ${req.params.id}` });
 }
 
-// @desc Delete contacts
-// @route DELETE  /api/contacts/:id
+// @desc Delete user
+// @route DELETE  /api/users/:id
 // @access public
-const deleteContact = (req, res) => {
+const deleteUser = (req, res) => {
 	res.status(200).json({ message: `Contact deleted for ${req.params.id}` });
 }
 
-module.exports = { getContacts, createContact, getContact, updateContact, deleteContact }
+module.exports = { getUsers, createUser, getUser, getUserPreferences, updateUser, deleteUser }
