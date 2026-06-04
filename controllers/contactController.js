@@ -14,7 +14,8 @@ const getContacts = async (req, res) => {
 
 		rows.forEach(row => {
 			// password should never be shown in this response
-			row = delete row.password;
+			delete row.password;
+			delete row.refreshToken;
 		});
 
 		// Send the JSON response
@@ -85,6 +86,7 @@ const getContact = async (req, res) => {
 		rows.forEach(row => {
 			// password should never be shown in this response
 			row = delete row.password;
+			row = delete row.refreshToken;
 		});
 
 		// Send the JSON response

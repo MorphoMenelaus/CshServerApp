@@ -14,7 +14,8 @@ const getUsers = async (req, res) => {
 
 		rows.forEach(row => {
 			// password should never be shown in this response
-			row = delete row.password;
+			delete row.password;
+			delete row.refreshToken;
 		});
 
 		// Send the JSON response
@@ -45,6 +46,14 @@ const createUser = async (req, res) => {
 
 		// Get a connection from the pool
 		conn = await pool.getConnection();
+
+		// Verify usreName is unique
+		const rows = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`); 
+		if (rows.length > 0) {
+			res.status(400);
+			throw new Error("User name already exists");
+		}
+
 
 		// Paceholders (?) to securely neutralize SQL injection risks
 		const result = await conn.query(
@@ -84,7 +93,8 @@ const getUser = async (req, res) => {
 
 		rows.forEach(row => {
 			// password should never be shown in this response
-			row = delete row.password;
+			delete row.password;
+			delete row.refreshToken;
 		});
 
 		// Send the JSON response
