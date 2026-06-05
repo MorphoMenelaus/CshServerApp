@@ -3,68 +3,6 @@ const packageJson = require('../package.json');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-// @desc POST registerUser
-// @route POST /api/auth/register
-// @access public
-const registerUser = async (req, res) => {
-
-	// Might implement role in the future
-	// const { email, password, role } = req.body;
-	const { userName, password } = req.body;
-
-	let conn;
-	let regError;
-	let regCode;
-
-	try {
-		// Validate inputs
-		if (!userName || !password) {
-			res.status(400);
-			regCode = 400;
-			regError = "All fields are requied";
-			throw new Error(regError);
-		}
-
-		// Hash password with 10 salt rounds
-		const hashedPassword = await bcrypt.hash(password, 10);
-
-		// Get a connection from the pool
-		conn = await pool.getConnection();
-
-		// Verify usreName is unique
-		const rows = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
-		if (rows.length > 0) {
-			res.status(400).json({
-				code: 400,
-				message: "User name already exists",
-				success: false,
-			});
-		}
-
-		// Paceholders (?) to securely neutralize SQL injection risks
-		const result = await conn.query(
-			"INSERT INTO users (userName, password) VALUES (?, ?)",
-			[userName, hashedPassword]
-		);
-
-		res.status(201).json({
-			code: 201,
-			message: "User created successfully",
-			success: true,
-		});
-
-	} catch {
-		res.status(500).json({
-			code: regCode ? regCode : 500,
-			message: regError ? regError : "Registration failed.",
-			success: false,
-		});
-	} finally {
-		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
-	}
-}
-
 // @desc POST login
 // @route POST /api/auth/login
 // @access public
@@ -77,14 +15,6 @@ const login = async (req, res) => {
 	// Get user record
 	const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
 	let singleUser = users[0];
-
-	const pref = await conn.query(`SELECT * FROM userPreferences WHERE userId = '${singleUser.userId}'`);
-	let preferences = {};
-	if (pref.length > 0) {
-		preferences = pref[0];
-		delete preferences.userId;
-		delete preferences.userName;
-	}
 
 	// const user = users.find(u => u.userName === userName);
 
@@ -102,8 +32,21 @@ const login = async (req, res) => {
 		success: false,
 	});
 
-	// Might implement role in the future
-	// { userName: user.userName, role: user.role },
+	// restructure user data before returning with auth codes
+	let permissions = {
+		admin: singleUser.admin === 1 ? true : false,
+		siteAdmin: singleUser.siteAdmin === 1 ? true : false,
+		siteEditor: singleUser.siteEditor === 1 ? true : false,
+		contributor: singleUser.contributor === 1 ? true : false
+	}
+	singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
+	singleUser.permissions = permissions;
+	delete singleUser.password;
+	delete singleUser.refreshToken;
+	delete singleUser.admin;
+	delete singleUser.siteAdmin;
+	delete singleUser.siteEditor;
+	delete singleUser.contributor;
 
 	// Generate stateless token with identity payload
 	// Set the accessToken expireTime for 1 hour
@@ -129,7 +72,7 @@ const login = async (req, res) => {
 		accessToken: token,
 		accessTokenExpiration: expireTime,
 		refreshToken: refreshToken,
-		preferences: preferences,
+		user: singleUser,
 		success: true
 	}
 
@@ -242,4 +185,4 @@ const logout = async (req, res) => {
 	if (conn) conn.end();
 };
 
-module.exports = { registerUser, login, refresh, logout };
+module.exports = { login, refresh, logout };

@@ -2,11 +2,11 @@ const mariadb = require("mariadb");
 
 // Create a connection pool
 const pool = mariadb.createPool({
-	host: "localhost",
-	user: "chriawjp_Vue3MeDB",
-	password: "chFeWcr/tf/2\'h;EEu_G",
-	database: "chriawjp_VueDbExperiment",
-	connectionLimit: 5 // Adjust based on your server capacity
+	host: process.env.DB_SERVER,
+	user: process.env.DB_USERNAME,
+	password: process.env.DB_PASSWORD,
+	database: process.env.DB_DATABASE,
+	connectionLimit: process.env.CONNECTION_LIMIT
 });
 
 // Export the pool to use across app
