@@ -63,10 +63,13 @@ const login = async (req, res) => {
 			{ expiresIn: '7d' }
 		);
 
-		// Save refresh token into user record
-		const saveRefreshToken = await conn.query(`UPDATE users SET refreshToken = '${refreshToken}' WHERE userName = '${singleUser.userName}'`);
+		// Save refresh token and last login into user record
+		const lastLoginTime = new Date().toISOString().slice(0, 23);
+		const saveRefreshToken = await conn.query(`UPDATE users 
+			SET refreshToken = '${refreshToken}', lastLogin = '${lastLoginTime}' 
+			WHERE userName = '${singleUser.userName}'`);
 
-		const date = new Date();
+		let date = new Date();
 		const expireTime = date.setHours(date.getHours() + 1);
 		const authorization = {
 			accessToken: token,
@@ -139,11 +142,17 @@ const refresh = async (req, res) => {
 			{ expiresIn: '7d' }
 		);
 
-		// Save refresh token into user record
-		const saveRefreshToken = await conn.query(`UPDATE users SET refreshToken = '${newRefreshToken}' WHERE userName = '${singleUser.userName}'`);
+		// // // Save refresh token into user record
+		// const saveRefreshToken = await conn.query(`UPDATE users SET refreshToken = '${refreshToken}' WHERE userName = '${singleUser.userName}'`);
+
+		// Save refresh token and last login into user record
+		const lastLoginTime = new Date().toISOString().slice(0, 23);
+		const saveRefreshToken = await conn.query(`UPDATE users 
+			SET refreshToken = '${newRefreshToken}', lastLogin = '${lastLoginTime}' 
+			WHERE userName = '${singleUser.userName}'`);
 
 		// Set the accessToken expireTime for 1 hour
-		const date = new Date();
+		let date = new Date();
 		const expireTime = date.setHours(date.getHours() + 1);
 		const newAuthorization = {
 			accessToken: newToken,

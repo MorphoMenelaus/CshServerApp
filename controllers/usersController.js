@@ -5,11 +5,10 @@ const bcrypt = require('bcrypt');
 // @route GET /api/users
 // @access public
 const getUsers = async (req, res) => {
-	let conn;
-	try {
-		// Get a connection from the pool
-		conn = await pool.getConnection();
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
 
+	try {
 		// Execute the query
 		const rows = await conn.query("SELECT * FROM users ORDER BY userName DESC LIMIT 10");
 
@@ -69,7 +68,7 @@ const registerUser = async (req, res) => {
 			throw new Error("User name already exists");
 		}
 
-		// Paceholders (?) to securely neutralize SQL injection risks
+		// Placeholders (?) to securely neutralize SQL injection risks
 		const result = await conn.query(
 			"INSERT INTO users (userName, password) VALUES (?, ?)",
 			[userName, hashedPassword]
@@ -98,12 +97,10 @@ const registerUser = async (req, res) => {
 // @access public
 const getUser = async (req, res) => {
 
-	let conn;
-	try {
-		// Get a connection from the pool
-		conn = await pool.getConnection();
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
 
-		console.log(req.params.id);
+	try {
 
 		// Execute the query
 		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
@@ -121,7 +118,7 @@ const getUser = async (req, res) => {
 			user: singleUser,
 			success: true,
 		});
-		
+
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({
@@ -133,25 +130,23 @@ const getUser = async (req, res) => {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
 	}
-	// res.status(200).json({ message: `Get contact for ${req.params.id}` });
 }
 
 // @desc GET user preferences
 // @route GET /api/users/prefs/:id
 // @access public
 const getUserPreferences = async (req, res) => {
-	let conn;
-	try {
-		// Get a connection from the pool
-		conn = await pool.getConnection();
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
 
-		console.log(req.params.id);
+	try {
 
 		// Execute the query
 		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = "${req.params.id}"`);
 
 		// Send the JSON response
 		res.status(200).json(rows);
+
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({
@@ -163,21 +158,104 @@ const getUserPreferences = async (req, res) => {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
 	}
-	// res.status(200).json({ message: `Get contact for ${req.params.id}` });
 }
 
 // @desc Update user
 // @route PUT /api/users/:id
 // @access public
-const updateUser = (req, res) => {
-	res.status(200).json({ message: `Update contact for ${req.params.id}` });
+const updateUser = async (req, res) => {
+	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, userNotes } = req.body;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		// Placeholders (?) to securely neutralize SQL injection risks
+		const queryText = `
+        UPDATE users 
+        SET 
+            email = ?, 
+            lastName = ?, 
+            firstName = ?, 
+            admin = ?, 
+            siteAdmin = ?, 
+            siteEditor = ?, 
+            contributor = ?, 
+            uiDarkMode = ?, 
+            userNotes = ? 
+        WHERE userId = ?
+    `;
+
+		const values = [
+			email,
+			lastName,
+			firstName,
+			admin,
+			siteAdmin,
+			siteEditor,
+			contributor,
+			uiDarkMode,
+			userNotes,
+			req.params.id
+		];
+
+		await conn.query(queryText, values);
+
+		res.status(201).json({
+			code: 201,
+			message: "User updated successfully",
+			success: true,
+		});
+
+	} catch {
+		res.status(500).json({
+			code: 500,
+			message: "Update failed.",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
+	}
 }
 
 // @desc Delete user
 // @route DELETE  /api/users/:id
 // @access public
-const deleteUser = (req, res) => {
-	res.status(200).json({ message: `Contact deleted for ${req.params.id}` });
+const deleteUser = async (req, res) => {
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		console.log(req.params.id);
+
+		// Get user record
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+		let singleUser = rows[0];
+
+		// Get user record
+		const userDeleted = await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
+
+		// Send the JSON response
+		res.status(200).json({
+			code: 200,
+			message: `Deleted user, ${singleUser.userName}`,
+			success: true,
+		});
+
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			code: 500,
+			message: "Delete failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
+	}
 }
 
 // @desc GET getClockLog
@@ -210,11 +288,12 @@ const getClockLog = async (req, res) => {
 // @route POST /api/users/clock
 // @access public
 const logSimpleClock = async (req, res) => {
-	let conn;
 	const { userId, userName, isWakeupEvent, notes } = req.body;
 
-	try {	// Get a connection from the pool
-		conn = await pool.getConnection();
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
 
 		// Paceholders (?) to securely neutralize SQL injection risks
 		const result = await conn.query(
