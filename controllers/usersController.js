@@ -22,8 +22,11 @@ const getUsers = async (req, res) => {
 		// Send the JSON response
 		res.status(200).json(rows);
 	} catch (error) {
-		console.error(error);
-		res.status(500).json({ error: "Database query failed" });
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
@@ -63,6 +66,7 @@ const registerUser = async (req, res) => {
 				message: "User name already exists",
 				success: false,
 			});
+			throw new Error("User name already exists");
 		}
 
 		// Paceholders (?) to securely neutralize SQL injection risks
@@ -93,6 +97,7 @@ const registerUser = async (req, res) => {
 // @route GET /api/users/:id
 // @access public
 const getUser = async (req, res) => {
+
 	let conn;
 	try {
 		// Get a connection from the pool
@@ -109,11 +114,21 @@ const getUser = async (req, res) => {
 			delete row.refreshToken;
 		});
 
+		let singleUser = rows[0];
+
 		// Send the JSON response
-		res.status(200).json(rows);
+		res.status(200).json({
+			user: singleUser,
+			success: true,
+		});
+		
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ error: "Database query failed" });
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
@@ -139,7 +154,11 @@ const getUserPreferences = async (req, res) => {
 		res.status(200).json(rows);
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ error: "Database query failed" });
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
@@ -176,7 +195,11 @@ const getClockLog = async (req, res) => {
 		res.status(200).json(rows);
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ success: false });
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
@@ -202,7 +225,11 @@ const logSimpleClock = async (req, res) => {
 		res.status(200).json({ success: true });
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ success: false });
+		res.status(500).json({
+			code: 500,
+			message: "Insert record failed",
+			success: false,
+		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.end();
