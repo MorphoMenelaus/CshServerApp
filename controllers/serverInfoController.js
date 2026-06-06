@@ -7,10 +7,17 @@ const packageJson = require('../package.json');
 const getVersion = async (req, res) => {
 	try {
 		// Send the JSON response
-		res.status(200).json({ version: packageJson.version });
+		res.status(200).json({
+			version: packageJson.version,
+			success: true,
+		});
 	} catch (error) {
 		console.error(error);
-		res.status(500).json({ error: "Server not responding" });
+		res.status(500).json({
+			code: 500,
+			message: "Server not responding",
+			success: false,
+		});
 	}
 }
 

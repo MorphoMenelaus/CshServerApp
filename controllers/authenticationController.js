@@ -12,75 +12,81 @@ const login = async (req, res) => {
 	// Get a connection from the pool
 	let conn = await pool.getConnection();
 
-	// Get user record
-	const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
-	let singleUser = users[0];
+	try {	// Get user record
+		const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
+		let singleUser = users[0];
 
-	// const user = users.find(u => u.userName === userName);
+		// const user = users.find(u => u.userName === userName);
 
-	const isBcryptHash = singleUser.password.startsWith('$2b$') || singleUser.password.startsWith('$2a$');
+		const isBcryptHash = singleUser.password.startsWith('$2b$') || singleUser.password.startsWith('$2a$');
 
-	// Compare hashed password if bcrypt hashed
-	let isPasswordValid;
-	if (isBcryptHash) {
-		isPasswordValid = await bcrypt.compare(password, singleUser.password);
+		// Compare hashed password if bcrypt hashed
+		let isPasswordValid;
+		if (isBcryptHash) {
+			isPasswordValid = await bcrypt.compare(password, singleUser.password);
+		}
+
+		if (!isPasswordValid) return res.status(400).json({
+			code: 400,
+			message: "Invalid credentials",
+			success: false,
+		});
+
+		// restructure user data before returning with auth codes
+		let permissions = {
+			admin: singleUser.admin === 1 ? true : false,
+			siteAdmin: singleUser.siteAdmin === 1 ? true : false,
+			siteEditor: singleUser.siteEditor === 1 ? true : false,
+			contributor: singleUser.contributor === 1 ? true : false
+		}
+		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
+		singleUser.permissions = permissions;
+		delete singleUser.password;
+		delete singleUser.refreshToken;
+		delete singleUser.admin;
+		delete singleUser.siteAdmin;
+		delete singleUser.siteEditor;
+		delete singleUser.contributor;
+
+		// Generate stateless token with identity payload
+		// Set the accessToken expireTime for 1 hour
+		const token = jwt.sign(
+			{ userName: singleUser.userName },
+			process.env.ACCESS_TOKEN_SECRET,
+			{ expiresIn: '1h' }
+		);
+
+		// Set the refreshToken expireTime for 1 week
+		const refreshToken = jwt.sign(
+			{ userName: singleUser.userName },
+			process.env.REFRESH_TOKEN_SECRET,
+			{ expiresIn: '7d' }
+		);
+
+		// Save refresh token into user record
+		const saveRefreshToken = await conn.query(`UPDATE users SET refreshToken = '${refreshToken}' WHERE userName = '${singleUser.userName}'`);
+
+		const date = new Date();
+		const expireTime = date.setHours(date.getHours() + 1);
+		const authorization = {
+			accessToken: token,
+			accessTokenExpiration: expireTime,
+			refreshToken: refreshToken,
+			user: singleUser,
+			success: true
+		}
+
+		res.status(200).json(authorization);
+	} catch {
+		res.status(500).json({
+			code: 500,
+			message: "Login failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.end();
 	}
-
-	if (!isPasswordValid) return res.status(400).json({
-		code: 400,
-		message: "Invalid credentials",
-		success: false,
-	});
-
-	// restructure user data before returning with auth codes
-	let permissions = {
-		admin: singleUser.admin === 1 ? true : false,
-		siteAdmin: singleUser.siteAdmin === 1 ? true : false,
-		siteEditor: singleUser.siteEditor === 1 ? true : false,
-		contributor: singleUser.contributor === 1 ? true : false
-	}
-	singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
-	singleUser.permissions = permissions;
-	delete singleUser.password;
-	delete singleUser.refreshToken;
-	delete singleUser.admin;
-	delete singleUser.siteAdmin;
-	delete singleUser.siteEditor;
-	delete singleUser.contributor;
-
-	// Generate stateless token with identity payload
-	// Set the accessToken expireTime for 1 hour
-	const token = jwt.sign(
-		{ userName: singleUser.userName },
-		process.env.ACCESS_TOKEN_SECRET,
-		{ expiresIn: '1h' }
-	);
-
-	// Set the refreshToken expireTime for 1 week
-	const refreshToken = jwt.sign(
-		{ userName: singleUser.userName },
-		process.env.REFRESH_TOKEN_SECRET,
-		{ expiresIn: '7d' }
-	);
-
-	// Save refresh token into user record
-	const saveRefreshToken = await conn.query(`UPDATE users SET refreshToken = '${refreshToken}' WHERE userName = '${singleUser.userName}'`);
-
-	const date = new Date();
-	const expireTime = date.setHours(date.getHours() + 1);
-	const authorization = {
-		accessToken: token,
-		accessTokenExpiration: expireTime,
-		refreshToken: refreshToken,
-		user: singleUser,
-		success: true
-	}
-
-	res.status(200).json(authorization);
-
-	// Crucial: Always release the connection back to the pool
-	if (conn) conn.end();
-
 }
 
 // @desc POST refresh token
