@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
+
 	// Extract the Authorization header
 	const authHeader = req.headers["authorization"];
 
@@ -15,6 +16,7 @@ function authenticateToken(req, res, next) {
 			success: false
 		});
 	}
+
 	try {
 
 		// Verify the token signature and expiration against your secret key
@@ -34,6 +36,7 @@ function authenticateToken(req, res, next) {
 			// Pass control to the next function/route handler
 			next();
 		});
+		
 	} catch (error) {
 		return res.status(403).json({
 			code: 403,

@@ -6,7 +6,8 @@ const pool = mariadb.createPool({
 	user: process.env.DB_USERNAME,
 	password: process.env.DB_PASSWORD,
 	database: process.env.DB_DATABASE,
-	connectionLimit: process.env.CONNECTION_LIMIT
+	connectionLimit: process.env.CONNECTION_LIMIT,
+	meta: false  // Disables the driver's metadata array wrapping
 });
 
 // Export the pool to use across app

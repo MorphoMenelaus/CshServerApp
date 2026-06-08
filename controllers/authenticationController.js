@@ -39,6 +39,7 @@ const login = async (req, res) => {
 			siteEditor: singleUser.siteEditor === 1 ? true : false,
 			contributor: singleUser.contributor === 1 ? true : false
 		}
+		
 		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
 		singleUser.permissions = permissions;
 		delete singleUser.password;
@@ -88,7 +89,7 @@ const login = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -171,7 +172,7 @@ const refresh = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -197,7 +198,7 @@ const logout = async (req, res) => {
 	res.json(logoutJson);
 
 	// Crucial: Always release the connection back to the pool
-	if (conn) conn.end();
+	if (conn) conn.release();
 };
 
 module.exports = { login, refresh, logout };
