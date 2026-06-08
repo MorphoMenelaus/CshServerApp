@@ -19,7 +19,13 @@ const getUsers = async (req, res) => {
 		});
 
 		// Send the JSON response
-		res.status(200).json(rows);
+		res.status(200).json({
+			code: 200,
+			message: "User list query success",
+			success: true,
+			users: rows,
+		});
+
 	} catch (error) {
 		res.status(500).json({
 			code: 500,
@@ -28,7 +34,7 @@ const getUsers = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -74,6 +80,8 @@ const registerUser = async (req, res) => {
 			[userName, hashedPassword]
 		);
 
+		await conn.commit();
+
 		res.status(201).json({
 			code: 201,
 			message: "User created successfully",
@@ -88,7 +96,7 @@ const registerUser = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -116,6 +124,8 @@ const getUser = async (req, res) => {
 		// Send the JSON response
 		res.status(200).json({
 			user: singleUser,
+			code: 200,
+			message: "Database query success",
 			success: true,
 		});
 
@@ -128,7 +138,7 @@ const getUser = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -156,7 +166,7 @@ const getUserPreferences = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -202,6 +212,8 @@ const updateUser = async (req, res) => {
 
 		await conn.query(queryText, values);
 
+		await conn.commit();
+
 		res.status(201).json({
 			code: 201,
 			message: "User updated successfully",
@@ -216,7 +228,7 @@ const updateUser = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -254,7 +266,7 @@ const deleteUser = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -267,10 +279,24 @@ const getClockLog = async (req, res) => {
 
 	try {
 
+		// Clear snapshot cache to prevent stale data (forces a fresh read)
+		await conn.query("COMMIT");
+
 		// Execute the query
 		const rows = await conn.query("SELECT * FROM simpleClockLog ORDER BY eventId DESC LIMIT 10");
 
-		res.status(200).json(rows);
+		// Convert driver-specific rows to a clean, standard JS array
+		const cleanRows = Array.from(rows).map(row => {
+			// Create a copy and omit userId
+			const { userId, ...rest } = row;
+			return rest;
+		});
+
+		// rows.forEach(row => {
+		// 	delete row.userId;
+		// });
+
+		res.status(200).json(cleanRows);
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({
@@ -280,7 +306,7 @@ const getClockLog = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 }
 
@@ -301,7 +327,13 @@ const logSimpleClock = async (req, res) => {
 			[userId, userName, isWakeupEvent, notes]
 		);
 
-		res.status(200).json({ success: true });
+		await conn.commit();
+
+		res.status(200).json({
+			code: 200,
+			message: "Log entry added",
+			success: true
+		});
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({
@@ -311,7 +343,7 @@ const logSimpleClock = async (req, res) => {
 		});
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.end();
+		if (conn) conn.release();
 	}
 
 }
