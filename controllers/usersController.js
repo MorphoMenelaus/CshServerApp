@@ -100,6 +100,77 @@ const registerUser = async (req, res) => {
 	}
 }
 
+// @desc POST change password
+// @route POST /api/users/password
+// @access public
+const changePassword = async (req, res) => {
+
+	const { userId, currentPassword, password } = req.body;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+		// Validate inputs
+		if (!currentPassword || !password) {
+			let message = "All fields are requied";
+			res.status(400).json({
+				code: 400,
+				message: message,
+				success: false,
+			});
+			throw new Error(message);
+		}
+
+		// Get user record
+		const users = await conn.query(`SELECT * FROM users WHERE userId = '${userId}'`);
+		let singleUser = users[0];
+
+		const isBcryptHash = singleUser.password.startsWith('$2b$') || singleUser.password.startsWith('$2a$');
+
+		// Compare hashed password if bcrypt hashed
+		let isPasswordValid;
+		if (isBcryptHash) {
+			isPasswordValid = await bcrypt.compare(currentPassword, singleUser.password);
+		}
+
+		if (!isPasswordValid) return res.status(400).json({
+			code: 400,
+			message: "Invalid credentials",
+			success: false,
+		});
+
+		// Hash password with 10 salt rounds
+		const hashedPassword = await bcrypt.hash(password, 10);
+
+		const result = await conn.query(
+			`UPDATE users SET password = ? WHERE userId = '${userId}'`,
+			[hashedPassword]
+		);
+
+		// Remove refresh token from user record
+		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = '' WHERE userId = '${userId}'`);
+
+		await conn.commit();
+
+		res.status(201).json({
+			code: 201,
+			message: "Password changed successfully",
+			success: true,
+		});
+
+	} catch {
+		res.status(500).json({
+			code: 500,
+			message: "Password change failed.",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
 // @desc GET user
 // @route GET /api/users/:id
 // @access public
@@ -348,4 +419,4 @@ const logSimpleClock = async (req, res) => {
 
 }
 
-module.exports = { getUsers, registerUser, getUser, getUserPreferences, updateUser, deleteUser, getClockLog, logSimpleClock }
+module.exports = { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser, getClockLog, logSimpleClock }

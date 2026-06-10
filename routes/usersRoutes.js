@@ -1,13 +1,15 @@
 const express = require("express");
 const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
-const { getUsers, registerUser, getUser, getUserPreferences, updateUser, deleteUser, getClockLog, logSimpleClock } = require("../controllers/usersController");
+const { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser, getClockLog, logSimpleClock } = require("../controllers/usersController");
 
 // router.use(authenticateToken);
 
 router.route("/").get(authenticateToken, getUsers);
 
 router.route("/register/").post(registerUser);
+
+router.route("/password").post(authenticateToken, changePassword);
 
 router.route("/:id").get(authenticateToken, getUser);
 

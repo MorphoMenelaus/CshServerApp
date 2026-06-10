@@ -12,7 +12,8 @@ const login = async (req, res) => {
 	// Get a connection from the pool
 	let conn = await pool.getConnection();
 
-	try {	// Get user record
+	try {
+		// Get user record
 		const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
 		let singleUser = users[0];
 
