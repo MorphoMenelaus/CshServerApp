@@ -1,9 +1,17 @@
 const pool = require("../connection/dbConnection");
 const packageJson = require('../package.json');
 
-// @desc GET server version
-// @route GET /api/version
-// @access public
+/**
+ * Retrieves server version.
+ * 
+ * @name getVersion
+ * @route {GET} /api/version
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
 const getVersion = async (req, res) => {
 	try {
 		// Send the JSON response

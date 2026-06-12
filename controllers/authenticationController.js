@@ -3,9 +3,18 @@ const packageJson = require('../package.json');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
-// @desc POST login
-// @route POST /api/auth/login
-// @access public
+/**
+ * Login to an existing user account.
+ * 
+ * @name login
+ * @route {POST} /api/auth/login
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const login = async (req, res) => {
 	const { userName, password } = req.body;
 
@@ -94,9 +103,20 @@ const login = async (req, res) => {
 	}
 }
 
-// @desc POST refresh token
-// @route POST /api/auth/refresh
-// @access public
+
+/**
+ * Refreshes an expired authentication token if the refresh token is valid and is no longer than a week old.
+ * 
+ * @name refresh
+ * @route {POST} /api/auth/refresh
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const refresh = async (req, res) => {
 	const { accessToken, refreshToken } = req.body;
 
@@ -177,9 +197,19 @@ const refresh = async (req, res) => {
 	}
 }
 
-// @desc POST logout
-// @route POST /api/auth/logout
-// @access public
+/**
+ * Logs a user out of the system and deletes the refresh token from the user account record.
+ * 
+ * @name logout
+ * @route {POST} /api/auth/logout
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const logout = async (req, res) => {
 	let conn = await pool.getConnection();
 
