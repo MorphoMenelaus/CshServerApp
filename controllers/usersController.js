@@ -1,16 +1,34 @@
 const pool = require("../connection/dbConnection");
 const bcrypt = require('bcrypt');
 
-// @desc GET all users
-// @route GET /api/users
-// @access public
+/**
+ * Retrieves the full details of all users, if authenticated via an access token.
+ * 
+ * @name getUsers
+ * @route {GET} /api/users
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const getUsers = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
+	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
+	const resultOffset = req.query.offset || 0;
+
 	try {
+
+		// Clear snapshot cache to prevent stale data (forces a fresh read)
+		await conn.query("COMMIT");
+
 		// Execute the query
-		const rows = await conn.query("SELECT * FROM users ORDER BY userName DESC LIMIT 10");
+		const query = `SELECT * FROM users ORDER BY userName DESC LIMIT ? OFFSET ?`;
+		const rows = await conn.execute(query, [resultLimit, resultOffset]);
 
 		rows.forEach(row => {
 			// password should never be shown in this response
@@ -38,9 +56,17 @@ const getUsers = async (req, res) => {
 	}
 }
 
-// @desc POST registerUser
-// @route POST /api/users/register
-// @access public
+/**
+ * Refisters a new users. The userName must be unique.
+ * 
+ * @name registerUser
+ * @route {POST} /api/users/register
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
 const registerUser = async (req, res) => {
 
 	const { userName, password } = req.body;
@@ -100,9 +126,20 @@ const registerUser = async (req, res) => {
 	}
 }
 
-// @desc POST change password
-// @route POST /api/users/password
-// @access public
+/**
+ * Changes a users password. User must have a correct current passsword.
+ * User must be logged in to change password
+ * 
+ * @name changePassword
+ * @route {POST} /api/users/password
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const changePassword = async (req, res) => {
 
 	const { userId, currentPassword, password } = req.body;
@@ -171,9 +208,19 @@ const changePassword = async (req, res) => {
 	}
 }
 
-// @desc GET user
-// @route GET /api/users/:id
-// @access public
+/**
+ * Retrieves the full details of a single user, if authenticated via an access token.
+ * 
+ * @name getUser
+ * @route {GET} /api/users/:id
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const getUser = async (req, res) => {
 
 	// Get a connection from the pool
@@ -213,9 +260,19 @@ const getUser = async (req, res) => {
 	}
 }
 
-// @desc GET user preferences
-// @route GET /api/users/prefs/:id
-// @access public
+/**
+ * Retrieves user preferences, if authenticated via an access token.
+ * 
+ * @name getUserPreferences
+ * @route {GET} /api/users/prefs/:id
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const getUserPreferences = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -241,9 +298,19 @@ const getUserPreferences = async (req, res) => {
 	}
 }
 
-// @desc Update user
-// @route PUT /api/users/:id
-// @access public
+/**
+ * Update user profiles, must be authenticated via an access token.
+ * 
+ * @name updateUser
+ * @route {PUT} /api/users/:id
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const updateUser = async (req, res) => {
 	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, userNotes } = req.body;
 
@@ -303,9 +370,20 @@ const updateUser = async (req, res) => {
 	}
 }
 
-// @desc Delete user
-// @route DELETE  /api/users/:id
-// @access public
+/**
+ * Deletes a user, if authenticated via an access token.
+ * Any log entries inserted by this user will remain. 
+ * 
+ * @name deleteUser
+ * @route {DELETE} /api/users/:id
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const deleteUser = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -341,82 +419,4 @@ const deleteUser = async (req, res) => {
 	}
 }
 
-// @desc GET getClockLog
-// @route GET /api/users/clock/log
-// @access public
-const getClockLog = async (req, res) => {
-	// Get a connection from the pool
-	const conn = await pool.getConnection();
-
-	try {
-
-		// Clear snapshot cache to prevent stale data (forces a fresh read)
-		await conn.query("COMMIT");
-
-		// Execute the query
-		const rows = await conn.query("SELECT * FROM simpleClockLog ORDER BY eventId DESC LIMIT 10");
-
-		// Convert driver-specific rows to a clean, standard JS array
-		const cleanRows = Array.from(rows).map(row => {
-			// Create a copy and omit userId
-			const { userId, ...rest } = row;
-			return rest;
-		});
-
-		// rows.forEach(row => {
-		// 	delete row.userId;
-		// });
-
-		res.status(200).json(cleanRows);
-	} catch (error) {
-		console.error(error);
-		res.status(500).json({
-			code: 500,
-			message: "Database query failed",
-			success: false,
-		});
-	} finally {
-		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
-	}
-}
-
-// @desc POST logSimpleClock
-// @route POST /api/users/clock
-// @access public
-const logSimpleClock = async (req, res) => {
-	const { userId, userName, isWakeupEvent, notes } = req.body;
-
-	// Get a connection from the pool
-	const conn = await pool.getConnection();
-
-	try {
-
-		// Paceholders (?) to securely neutralize SQL injection risks
-		const result = await conn.query(
-			"INSERT INTO simpleClockLog (userId, userName, isWakeupEvent, notes) VALUES (?, ?, ?, ?)",
-			[userId, userName, isWakeupEvent, notes]
-		);
-
-		await conn.commit();
-
-		res.status(200).json({
-			code: 200,
-			message: "Log entry added",
-			success: true
-		});
-	} catch (error) {
-		console.error(error);
-		res.status(500).json({
-			code: 500,
-			message: "Insert record failed",
-			success: false,
-		});
-	} finally {
-		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
-	}
-
-}
-
-module.exports = { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser, getClockLog, logSimpleClock }
+module.exports = { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser }

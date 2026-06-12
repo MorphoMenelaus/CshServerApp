@@ -1,15 +1,35 @@
 const pool = require("../connection/dbConnection");
 
-// @desc GET all user logs
-// @route GET /api/userlogs
-// @access public
+/**
+ * Retrieves logs all users, if authenticated via an access token.
+ * These logs are to document user actions that are tracked.
+ * They are not attached to the user record and remain even after a user is deleted.
+ * 
+ * @name getUserLogs
+ * @route {GET} /api/userlogs
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const getUserLogs = async (req, res) => {
+
+	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
+	const resultOffset = req.query.offset || 0;
+
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
+		// Clear snapshot cache to prevent stale data (forces a fresh read)
+		await conn.query("COMMIT");
+
 		// Execute the query
-		const rows = await conn.query("SELECT * FROM userLogs ORDER BY entryId DESC LIMIT 10");
+		const query = `SELECT * FROM userLogs ORDER BY entryId DESC LIMIT ? OFFSET ?`;
+		const rows = await conn.execute(query, [resultLimit, resultOffset]);
 
 		// Send the JSON response
 		res.status(200).json({
@@ -31,9 +51,19 @@ const getUserLogs = async (req, res) => {
 	}
 }
 
-// @desc POST add user logs
-// @route POST /api/userlogs
-// @access public
+/**
+ * Retrieves the full details of all users, if authenticated via an access token.
+ * 
+ * @name addUserLogs
+ * @route {POST} /api/userlogs
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
 const addUserLogs = async (req, res) => {
 	const { userId, userName, actionPerformed } = req.body;
 
@@ -78,4 +108,107 @@ const addUserLogs = async (req, res) => {
 	}
 }
 
-module.exports = { getUserLogs, addUserLogs };
+/**
+ * Retrieves the logs for the SimpleClock component, if authenticated via an access token.
+ * 
+ * @name getClockLog
+ * @route {GET} /api/userlogs/clock/log
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const getClockLog = async (req, res) => {
+
+	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
+	const resultOffset = req.query.offset || 0;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		// Clear snapshot cache to prevent stale data (forces a fresh read)
+		await conn.query("COMMIT");
+
+		// Execute the query
+		const query = `SELECT * FROM simpleClockLog ORDER BY eventId DESC LIMIT ? OFFSET ?`;
+		const rows = await conn.execute(query, [resultLimit, resultOffset]);
+
+		// Convert driver-specific rows to a clean, standard JS array
+		const cleanRows = Array.from(rows).map(row => {
+			// Create a copy and omit userId
+			const { userId, ...rest } = row;
+			return rest;
+		});
+
+		// rows.forEach(row => {
+		// 	delete row.userId;
+		// });
+
+		res.status(200).json(cleanRows);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+/**
+ * Adds an entry to the logs for the SimpleClock component, if authenticated via an access token.
+ * 
+ * @name logSimpleClock
+ * @route {POST} /api/userlogs/clock
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const logSimpleClock = async (req, res) => {
+	const { userId, userName, isWakeupEvent, notes } = req.body;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		// Paceholders (?) to securely neutralize SQL injection risks
+		const result = await conn.query(
+			"INSERT INTO simpleClockLog (userId, userName, isWakeupEvent, notes) VALUES (?, ?, ?, ?)",
+			[userId, userName, isWakeupEvent, notes]
+		);
+
+		await conn.commit();
+
+		res.status(200).json({
+			code: 200,
+			message: "Log entry added",
+			success: true
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			code: 500,
+			message: "Insert record failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+
+}
+
+module.exports = { getUserLogs, addUserLogs, getClockLog, logSimpleClock };

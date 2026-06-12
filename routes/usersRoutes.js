@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
-const { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser, getClockLog, logSimpleClock } = require("../controllers/usersController");
+const { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser } = require("../controllers/usersController");
 
 // router.use(authenticateToken);
 
@@ -18,9 +18,5 @@ router.route("/prefs/:id").get(authenticateToken, getUserPreferences);
 router.route("/:id").put(authenticateToken, updateUser);
 
 router.route("/:id").delete(authenticateToken, deleteUser);
-
-router.route("/clock/log").get(getClockLog);
-
-router.route("/clock/").post(authenticateToken, logSimpleClock);
 
 module.exports = router;
