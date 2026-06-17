@@ -208,7 +208,6 @@ const logSimpleClock = async (req, res) => {
 		// Crucial: Always release the connection back to the pool
 		if (conn) conn.release();
 	}
-
 }
 
 module.exports = { getUserLogs, addUserLogs, getClockLog, logSimpleClock };
