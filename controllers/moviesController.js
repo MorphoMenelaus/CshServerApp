@@ -213,6 +213,14 @@ const getMovieFavorite = async (req, res) => {
 	try {
 
 		const usersData = await conn.query(`SELECT movieFavorites FROM userStore WHERE userId = '${userId}'`);
+		if (!usersData?.length > 0) {
+			res.status(201).json({
+				code: 201,
+				message: `userStore does not exist or favorites list is empty`,
+				success: true,
+				userFavorites: [],
+			});
+		}
 		const userFavorites = usersData[0].movieFavorites;
 
 		res.status(201).json({
@@ -294,7 +302,7 @@ const removeMovieFavorite = async (req, res) => {
  * Adds a movieId to (array)movieFavorites in userStore bu userId, if authenticated via an access token.
  * 
  * @name addMovieFavorite
- * @route {PUT} /api/movies/favorites
+ * @route {POST} /api/movies/favorites
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
  * 

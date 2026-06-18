@@ -13,5 +13,4 @@ router.route("/favorites/:userId").put(authenticateToken, removeMovieFavorite);
 
 router.route("/favorites").post(authenticateToken, addMovieFavorite);
 
-
 module.exports = router;
