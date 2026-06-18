@@ -52,7 +52,7 @@ const getUserLogs = async (req, res) => {
 }
 
 /**
- * Retrieves the full details of all users, if authenticated via an access token.
+ * Logs any changes of all users and data associated with users, if authenticated via an access token.
  * 
  * @name addUserLogs
  * @route {POST} /api/userlogs
@@ -99,7 +99,7 @@ const addUserLogs = async (req, res) => {
 	} catch (error) {
 		res.status(500).json({
 			code: 500,
-			message: "Inser log failed.",
+			message: "Insert log failed.",
 			success: false,
 		});
 	} finally {

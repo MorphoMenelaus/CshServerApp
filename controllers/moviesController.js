@@ -190,4 +190,167 @@ const updateSingleMovie = async (req, res) => {
 	}
 }
 
-module.exports = { getMovieData, updateSingleMovie };
+/**
+ * Gets (array)movieFavorites associated with user by userId, if authenticated via an access token.
+ * Array contains all movies by movieId.
+ * 
+ * @name getMovieFavorite
+ * @route {GET} /api/movies/favorites/:userId
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const getMovieFavorite = async (req, res) => {
+	const userId = req.params.userId;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		const usersData = await conn.query(`SELECT movieFavorites FROM userStore WHERE userId = '${userId}'`);
+		const userFavorites = usersData[0].movieFavorites;
+
+		res.status(201).json({
+			code: 201,
+			message: `Movie favorites retrieved successfully`,
+			success: true,
+			userFavorites,
+		});
+
+	} catch (error) {
+		res.status(500).json({
+			code: 500,
+			message: "Get movie favorites failed.",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+/**
+ * Adds a movieId to (array)movieFavorites in userStore bu userId, if authenticated via an access token.
+ * 
+ * @name removeMovieFavorite
+ * @route {PUT} /api/movies/favorites/:movieId
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const removeMovieFavorite = async (req, res) => {
+	const userId = req.params.userId;
+	const { movieId } = req.body;
+
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		// Placeholders (?) to securely neutralize SQL injection risks
+		const query = `
+			UPDATE userStore 
+			SET movieFavorites = JSON_REMOVE(
+				movieFavorites, 
+				JSON_UNQUOTE(JSON_SEARCH(movieFavorites, 'one', ?))
+			) 
+			WHERE userId = ? 
+			AND JSON_SEARCH(movieFavorites, 'one', ?) IS NOT NULL
+			`;
+
+		const values = [movieId, userId, movieId];
+
+		await conn.execute(query, values);
+
+		res.status(201).json({
+			code: 201,
+			message: `Movie favorite removed successfully`,
+			success: true,
+		});
+
+	} catch (error) {
+		res.status(500).json({
+			code: 500,
+			message: "Remove favorite failed.",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+/**
+ * Adds a movieId to (array)movieFavorites in userStore bu userId, if authenticated via an access token.
+ * 
+ * @name addMovieFavorite
+ * @route {PUT} /api/movies/favorites
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const addMovieFavorite = async (req, res) => {
+	const { userId, movieId } = req.body;
+
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		// Add userStore record if one doesn't exist
+		const usersData = await conn.query(`SELECT * FROM userStore WHERE userId = '${userId}'`);
+
+		if (usersData?.length === 0) {
+			const result = await conn.query(
+				"INSERT INTO userStore (userId) VALUES (?)",
+				[userId]
+			);
+			await conn.commit();
+		}
+
+		// Placeholders (?) to securely neutralize SQL injection risks
+		const query = `
+			UPDATE userStore 
+			SET movieFavorites = JSON_ARRAY_APPEND(COALESCE(movieFavorites, '[]'), '$', ?) 
+			WHERE userId = ? 
+			AND NOT JSON_CONTAINS(COALESCE(movieFavorites, '[]'), ?, '$')
+		`;
+
+		const values = [movieId, userId, movieId];
+
+		await conn.execute(query, values);
+
+		res.status(201).json({
+			code: 201,
+			message: `Movie favorite added successfully`,
+			success: true,
+		});
+
+	} catch (error) {
+		res.status(500).json({
+			code: 500,
+			message: "Insert favorite failed.",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+module.exports = { getMovieData, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite };
