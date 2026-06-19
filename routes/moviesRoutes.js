@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
-const { getMovieData, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite } = require("../controllers/moviesController");
+const { getMovieSlides, getMovieData, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite } = require("../controllers/moviesController");
+
+router.route("/slides").get(getMovieSlides);
 
 router.route("/").get(authenticateToken, getMovieData);
 
