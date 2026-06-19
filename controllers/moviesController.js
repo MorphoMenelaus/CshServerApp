@@ -2,6 +2,50 @@ const pool = require("../connection/dbConnection");
 const packageJson = require('../package.json');
 
 /**
+ * Retrieves slideshow images and data.
+ * 
+ * @name getMovieSlides
+ * @route {GET} /api/movies/slides
+ * @access Public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+const getMovieSlides = async (req, res) => {
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	const resultLimit = req.query.limit || 5;
+	const resultOffset = req.query.offset || 0;
+
+	try {
+
+		// Execute the query
+		const query = `SELECT * FROM carousel LIMIT ? OFFSET ?`;
+		const rows = await conn.execute(query, [resultLimit, resultOffset]);
+
+		// Send the JSON response
+		res.status(200).json({
+			code: 200,
+			message: "Movie slides query success",
+			success: true,
+			slides: rows,
+		});
+
+	} catch (error) {
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+/**
  * Retrieves logs all movies, if authenticated via an access token.
  * 
  * @name getMovieData
@@ -361,4 +405,4 @@ const addMovieFavorite = async (req, res) => {
 	}
 }
 
-module.exports = { getMovieData, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite };
+module.exports = { getMovieSlides, getMovieData, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite };

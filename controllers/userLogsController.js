@@ -177,7 +177,7 @@ const getClockLog = async (req, res) => {
  * @returns {Promise<void>}
  */
 const logSimpleClock = async (req, res) => {
-	const { userId, userName, isWakeupEvent, notes } = req.body;
+	const { userId, userName, eventType, isWakeupEvent, notes } = req.body;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -186,8 +186,8 @@ const logSimpleClock = async (req, res) => {
 
 		// Paceholders (?) to securely neutralize SQL injection risks
 		const result = await conn.query(
-			"INSERT INTO simpleClockLog (userId, userName, isWakeupEvent, notes) VALUES (?, ?, ?, ?)",
-			[userId, userName, isWakeupEvent, notes]
+			"INSERT INTO simpleClockLog (userId, userName, eventType, isWakeupEvent, notes) VALUES (?, ?, ?, ?, ?)",
+			[userId, userName, eventType, isWakeupEvent, notes]
 		);
 
 		await conn.commit();
