@@ -42,14 +42,21 @@ const login = async (req, res) => {
 			success: false,
 		});
 
+		if (!singleUser.verified) return res.status(403).json({
+			code: 403,
+			message: "Account validation required. Please verify account or contact the administrator.",
+			success: false,
+		});
+
 		// restructure user data before returning with auth codes
 		let permissions = {
 			admin: singleUser.admin === 1 ? true : false,
 			siteAdmin: singleUser.siteAdmin === 1 ? true : false,
 			siteEditor: singleUser.siteEditor === 1 ? true : false,
-			contributor: singleUser.contributor === 1 ? true : false
+			contributor: singleUser.contributor === 1 ? true : false,
+			verified: singleUser.verified === 1 ? true : false
 		}
-		
+
 		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
 		singleUser.permissions = permissions;
 		delete singleUser.password;
@@ -58,6 +65,7 @@ const login = async (req, res) => {
 		delete singleUser.siteAdmin;
 		delete singleUser.siteEditor;
 		delete singleUser.contributor;
+		delete singleUser.verified;
 
 		// Generate stateless token with identity payload
 		// Set the accessToken expireTime for 1 hour
@@ -90,7 +98,12 @@ const login = async (req, res) => {
 			success: true
 		}
 
-		res.status(200).json(authorization);
+		res.status(200).json({
+			code: 200,
+			message: "",
+			success: true,
+			authorization: authorization
+		});
 	} catch {
 		res.status(500).json({
 			code: 500,
