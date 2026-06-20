@@ -228,7 +228,7 @@ const getUser = async (req, res) => {
 
 	try {
 
-		// Execute the query
+
 		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
 
 		rows.forEach(row => {
@@ -244,6 +244,57 @@ const getUser = async (req, res) => {
 			user: singleUser,
 			code: 200,
 			message: "Database query success",
+			success: true,
+		});
+
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+/**
+ * Retrieves the full details of users WHERE userName LIKE %keyword%, if authenticated via an access token.
+ * 
+ * @name findUserByName
+ * @route {GET} /api/users/name/:userName
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const findUserByName = async (req, res) => {
+
+	const searchTerms = req.params.userName || "";
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		const query = `SELECT * FROM users WHERE userName LIKE ?`;
+		const rows = await conn.query(query, ['%' + searchTerms + '%']);
+
+		rows.forEach(row => {
+			// password should never be shown in this response
+			delete row.password;
+			delete row.refreshToken;
+		});
+
+		res.status(200).json({
+			users: rows,
+			code: 200,
+			message: `Database query - ${searchTerms} -  success`,
 			success: true,
 		});
 
@@ -312,7 +363,7 @@ const getUserPreferences = async (req, res) => {
  * @returns {Promise<void>}
  */
 const updateUser = async (req, res) => {
-	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, userNotes } = req.body;
+	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, userNotes, verified } = req.body;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -331,7 +382,8 @@ const updateUser = async (req, res) => {
             siteEditor = ?, 
             contributor = ?, 
             uiDarkMode = ?, 
-            userNotes = ? 
+            userNotes = ?, 
+			verified = ? 
         WHERE userId = ?
     `;
 
@@ -345,6 +397,7 @@ const updateUser = async (req, res) => {
 			contributor,
 			uiDarkMode,
 			userNotes,
+			verified,
 			req.params.id
 		];
 
@@ -419,4 +472,4 @@ const deleteUser = async (req, res) => {
 	}
 }
 
-module.exports = { getUsers, registerUser, changePassword, getUser, getUserPreferences, updateUser, deleteUser }
+module.exports = { getUsers, registerUser, changePassword, getUser, findUserByName, getUserPreferences, updateUser, deleteUser }
