@@ -405,10 +405,34 @@ const updateUser = async (req, res) => {
 
 		await conn.commit();
 
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+
+		let singleUser = rows[0];
+
+		// restructure user data before returning
+		let permissions = {
+			admin: singleUser.admin === 1 ? true : false,
+			siteAdmin: singleUser.siteAdmin === 1 ? true : false,
+			siteEditor: singleUser.siteEditor === 1 ? true : false,
+			contributor: singleUser.contributor === 1 ? true : false,
+			verified: singleUser.verified === 1 ? true : false
+		}
+
+		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
+		singleUser.permissions = permissions;
+		delete singleUser.password;
+		delete singleUser.refreshToken;
+		delete singleUser.admin;
+		delete singleUser.siteAdmin;
+		delete singleUser.siteEditor;
+		delete singleUser.contributor;
+		delete singleUser.verified;
+
 		res.status(201).json({
 			code: 201,
 			message: "User updated successfully",
 			success: true,
+			user: singleUser,
 		});
 
 	} catch {
