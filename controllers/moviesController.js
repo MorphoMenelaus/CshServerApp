@@ -114,7 +114,73 @@ const getMovieData = async (req, res) => {
 		// Send the JSON response
 		res.status(200).json({
 			code: 200,
-			message: "User logs query success",
+			message: "Movies query success",
+			success: true,
+			movies: rows,
+		});
+
+	} catch (error) {
+		res.status(500).json({
+			code: 500,
+			message: "Database query failed",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+/**
+ * Retrieves all favorite movies by movieId, if authenticated via an access token.
+ * 
+ * @name getFavoritesByMovieIds
+ * @route {POST} /api/movies
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const getFavoritesByMovieIds = async (req, res) => {
+	const { movieIds } = req.body;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		const columns = [
+			"movieId",
+			"title",
+			"original_title",
+			"tagline",
+			"summary",
+			"studio",
+			"rating",
+			"content_rating",
+			"duration",
+			"tags_genre",
+			"tags_director",
+			"tags_writer",
+			"tags_star",
+			"year",
+			"tags_country",
+			"audience_rating",
+			"slug",
+		]
+
+		const placeholders = movieIds.map(() => '?').join(', ');
+
+		const query = `SELECT ${columns} FROM metadata_items WHERE movieId IN (${placeholders})`;
+		const rows = await conn.query(query, [...movieIds]);
+
+		// Send the JSON response
+		res.status(200).json({
+			code: 200,
+			message: "Favories query success",
 			success: true,
 			movies: rows,
 		});
@@ -287,7 +353,7 @@ const getMovieFavorite = async (req, res) => {
 }
 
 /**
- * Adds a movieId to (array)movieFavorites in userStore bu userId, if authenticated via an access token.
+ * Removes a movieId from (array)movieFavorites in userStore by userId, if authenticated via an access token.
  * 
  * @name removeMovieFavorite
  * @route {PUT} /api/movies/favorites/:movieId
@@ -343,7 +409,7 @@ const removeMovieFavorite = async (req, res) => {
 }
 
 /**
- * Adds a movieId to (array)movieFavorites in userStore bu userId, if authenticated via an access token.
+ * Adds a movieId to (array)movieFavorites in userStore by userId, if authenticated via an access token.
  * 
  * @name addMovieFavorite
  * @route {POST} /api/movies/favorites
@@ -405,4 +471,4 @@ const addMovieFavorite = async (req, res) => {
 	}
 }
 
-module.exports = { getMovieSlides, getMovieData, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite };
+module.exports = { getMovieSlides, getMovieData, getFavoritesByMovieIds, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite };

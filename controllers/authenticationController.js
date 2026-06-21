@@ -141,15 +141,15 @@ const refresh = async (req, res) => {
 		// Match active refresh token and get user record
 		const users = await conn.query(`SELECT * FROM users WHERE refreshToken = '${refreshToken}'`);
 		let singleUser = users[0];
-		let userName = singleUser.userName;
+		let userName = singleUser?.userName;
 
 		if (singleUser?.refreshToken !== refreshToken) {
 			res.status(403).json({
 				code: 403,
-				message: "Refresh Tokens are not a match to the user record",
+				message: "Account is already logged into on another device",
 				success: false,
 			});
-			throw new Error("Refresh Tokens are not a match to the user record");
+			throw new Error("Account is already logged into on another device");
 		}
 
 		// Verify the token integrity
@@ -177,9 +177,6 @@ const refresh = async (req, res) => {
 			{ expiresIn: '7d' }
 		);
 
-		// // // Save refresh token into user record
-		// const saveRefreshToken = await conn.query(`UPDATE users SET refreshToken = '${refreshToken}' WHERE userName = '${singleUser.userName}'`);
-
 		// Save refresh token and last login into user record
 		const lastLoginTime = new Date().toISOString().slice(0, 23);
 		const saveRefreshToken = await conn.query(`UPDATE users 
@@ -201,7 +198,7 @@ const refresh = async (req, res) => {
 	} catch {
 		res.status(500).json({
 			code: 500,
-			message: "Refresh failed.",
+			message: "Internal Server Error",
 			success: false,
 		});
 	} finally {

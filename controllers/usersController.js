@@ -405,10 +405,34 @@ const updateUser = async (req, res) => {
 
 		await conn.commit();
 
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+
+		let singleUser = rows[0];
+
+		// restructure user data before returning
+		let permissions = {
+			admin: singleUser.admin === 1 ? true : false,
+			siteAdmin: singleUser.siteAdmin === 1 ? true : false,
+			siteEditor: singleUser.siteEditor === 1 ? true : false,
+			contributor: singleUser.contributor === 1 ? true : false,
+			verified: singleUser.verified === 1 ? true : false
+		}
+
+		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
+		singleUser.permissions = permissions;
+		delete singleUser.password;
+		delete singleUser.refreshToken;
+		delete singleUser.admin;
+		delete singleUser.siteAdmin;
+		delete singleUser.siteEditor;
+		delete singleUser.contributor;
+		delete singleUser.verified;
+
 		res.status(201).json({
 			code: 201,
 			message: "User updated successfully",
 			success: true,
+			user: singleUser,
 		});
 
 	} catch {
@@ -446,16 +470,17 @@ const deleteUser = async (req, res) => {
 		console.log(req.params.id);
 
 		// Get user record
-		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
-		let singleUser = rows[0];
+		// const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+		// let singleUser = rows[0];
 
-		// Get user record
-		const userDeleted = await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
+		// Delete user records
+		await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
+		await conn.query(`DELETE FROM userStore WHERE userId = '${req.params.id}'`);
 
 		// Send the JSON response
 		res.status(200).json({
 			code: 200,
-			message: `Deleted user, ${singleUser.userName}`,
+			message: `User Deleted`,
 			success: true,
 		});
 
