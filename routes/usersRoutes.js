@@ -3,8 +3,6 @@ const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
 const { getUsers, registerUser, changePassword, getUser, findUserByName, getUserPreferences, updateUser, deleteUser } = require("../controllers/usersController");
 
-// router.use(authenticateToken);
-
 router.route("/").get(authenticateToken, getUsers);
 
 router.route("/register/").post(registerUser);

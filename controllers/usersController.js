@@ -446,16 +446,17 @@ const deleteUser = async (req, res) => {
 		console.log(req.params.id);
 
 		// Get user record
-		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
-		let singleUser = rows[0];
+		// const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+		// let singleUser = rows[0];
 
-		// Get user record
-		const userDeleted = await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
+		// Delete user records
+		await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
+		await conn.query(`DELETE FROM userStore WHERE userId = '${req.params.id}'`);
 
 		// Send the JSON response
 		res.status(200).json({
 			code: 200,
-			message: `Deleted user, ${singleUser.userName}`,
+			message: `User Deleted`,
 			success: true,
 		});
 
