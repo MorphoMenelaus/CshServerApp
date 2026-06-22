@@ -57,7 +57,7 @@ const getUsers = async (req, res) => {
 }
 
 /**
- * Refisters a new users. The userName must be unique.
+ * Registers a new users. The userName must be unique.
  * 
  * @name registerUser
  * @route {POST} /api/users/register
@@ -69,50 +69,92 @@ const getUsers = async (req, res) => {
  */
 const registerUser = async (req, res) => {
 
-	const { userName, password } = req.body;
+	const { token, userName, password } = req.body;
+
+	// Validate inputs
+	if (!userName || !password) {
+		let message = "All fields are requied";
+		res.status(400).json({
+			code: 400,
+			message: message,
+			success: false,
+		});
+		throw new Error(message);
+	}
+
+	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
+	const siteKey = process.env.RECAPTCHA_SITE_KEY;
+	const hostname = process.env.HOSTNAME;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
-		// Validate inputs
-		if (!userName || !password) {
-			let msg = "All fields are requied";
-			res.status(400).json({
-				code: 400,
-				message: msg,
-				success: false,
-			});
-			throw new Error(msg);
+
+		let body = {
+			event: {
+				token: token,
+				siteKey: siteKey,
+				expectedAction: "register" // Must match the action string used in frontend component
+			}
 		}
 
-		// Hash password with 10 salt rounds
-		const hashedPassword = await bcrypt.hash(password, 10);
+		const apiUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${apiKey}&response=${token}`;
 
-		// Verify usreName is unique
-		const rows = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
-		if (rows?.length > 0) {
-			res.status(400).json({
-				code: 400,
-				message: "User name already exists",
-				success: false,
-			});
-			throw new Error("User name already exists");
-		}
-
-		// Placeholders (?) to securely neutralize SQL injection risks
-		const result = await conn.query(
-			"INSERT INTO users (userName, password) VALUES (?, ?)",
-			[userName, hashedPassword]
-		);
-
-		await conn.commit();
-
-		res.status(201).json({
-			code: 201,
-			message: "User created successfully",
-			success: true,
+		const response = await fetch(apiUrl, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body)
 		});
+
+		const data = await response.json();
+
+		if (!data?.success) {
+			return res.status(500).json({
+				code: 500,
+				success: false,
+				message: "Google Recaptcha assessment failed"
+			});
+		}
+
+		// Check if the assessment verdict is safe
+		if (data?.score >= 0.5 && data?.hostname === hostname) {
+
+			// Hash password with 10 salt rounds
+			const hashedPassword = await bcrypt.hash(password, 10);
+
+			// Verify usreName is unique
+			const rows = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
+			if (rows?.length > 0) {
+				res.status(400).json({
+					code: 400,
+					message: "User name already exists",
+					success: false,
+				});
+				throw new Error("User name already exists");
+			}
+
+			// Placeholders (?) to securely neutralize SQL injection risks
+			const result = await conn.query(
+				"INSERT INTO users (userName, password) VALUES (?, ?)",
+				[userName, hashedPassword]
+			);
+
+			await conn.commit();
+
+			res.status(201).json({
+				code: 201,
+				message: "User created successfully",
+				success: true,
+			});
+		} else {
+			// Block the request
+			res.status(400).json({
+				code: 400,
+				success: false,
+				message: "Bot activity detected."
+			});
+		}
 
 	} catch {
 		res.status(500).json({
