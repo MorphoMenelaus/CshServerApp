@@ -18,6 +18,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", require("./routes/authenticationRoutes"));
 app.use("/api/users", require("./routes/usersRoutes"));
 app.use("/api/serverInfo", require("./routes/serverInfoRoutes"));
+app.use("/api/mail", require("./routes/mailRoutes"));
 app.use("/api/userlogs", require("./routes/userLogsRoutes"));
 app.use("/api/movies", require("./routes/moviesRoutes"));
 // app.use("/api/verify-captcha", require("./routes/verifyCaptcha"));
