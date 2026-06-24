@@ -511,10 +511,6 @@ const deleteUser = async (req, res) => {
 
 		console.log(req.params.id);
 
-		// Get user record
-		// const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
-		// let singleUser = rows[0];
-
 		// Delete user records
 		await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
 		await conn.query(`DELETE FROM userStore WHERE userId = '${req.params.id}'`);

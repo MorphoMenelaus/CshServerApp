@@ -4,6 +4,7 @@ const nodemailer = require('nodemailer');
 
 /**
  * Send contact email to a single systemAdmin account from user.
+ * Also, inserts a record into the contacs database.
  * 
  * @name sendContactMail
  * @route {POST} /api/mail
@@ -16,6 +17,9 @@ const nodemailer = require('nodemailer');
 const sendContactMail = async (req, res) => {
 
 	const { token, name, email, phone, subject, message } = req.body;
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
 
 	const adminEmail = process.env.ADMIN_EMAIL;
 	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -70,19 +74,43 @@ const sendContactMail = async (req, res) => {
 				subject: `${subject}`,
 				text: `${message}`, // Plain text fallback
 				html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
-              <h2 style="color: #4f84d9;">${subject}</h2>
-			  <h3>${name}</h3>
-			  <ul>
-			  <li>${email}</li>
-			  <li>${phone}</li>
-			  </ul>
-              <p>${message}</p>
-              <hr />
-              <small style="color: #777;">Sent automatically by the CSH Server.</small>
-             </div>`,
+				<h1>Thanks for reaching out!</h1>
+				<h2 style="color: #4f84d9;">${subject}</h2>
+				<h3>${name}</h3>
+				<p>
+				<span>${email}</span>
+				<br />
+				<span>${phone}</span>
+				</p>
+				<p>${message}</p>
+				<hr />
+				<small style="color: #777;">Sent automatically by the CSH Application.</small>
+				</div>`,
 			};
 
 			const info = await transporter.sendMail(mailOptions);
+
+			// Insert contacts record for emails sent
+			const queryText = `
+			INSERT INTO contacts 
+			(name, 
+            email, 
+            phone, 
+            subject, 
+            message) 
+			VALUES (?, ?, ?, ?, ?)
+			`;
+
+			const values = [
+				name,
+				email,
+				phone,
+				subject,
+				message,
+			];
+
+			await conn.query(queryText, values);
+			await conn.commit();
 
 			res.status(200).json({
 				code: 200,
@@ -105,6 +133,9 @@ const sendContactMail = async (req, res) => {
 			message: "Send Email Failed",
 			success: false,
 		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
 	}
 }
 

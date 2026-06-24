@@ -145,10 +145,6 @@ const getClockLog = async (req, res) => {
 			return rest;
 		});
 
-		// rows.forEach(row => {
-		// 	delete row.userId;
-		// });
-
 		res.status(200).json(cleanRows);
 	} catch (error) {
 		console.error(error);
