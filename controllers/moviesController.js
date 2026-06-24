@@ -65,17 +65,6 @@ const getMovieData = async (req, res) => {
 	const sortBy = req.query.sort || 'title';
 	const searchTerms = req.query.keyword || '';
 
-	// const allowedColumns = ['title', 'rating', 'year', 'tags_director', 'tags_genre'];
-	// // const allowedDirections = ['ASC', 'DESC'];
-
-	// const sortBy = allowedColumns.includes(req.query.sort)
-	// 	? req.query.sort
-	// 	: 'title';
-
-	// const direction = allowedDirections.includes(req.query.dir?.toUpperCase())
-	// 	? req.query.dir.toUpperCase()
-	// 	: 'DESC';
-
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
