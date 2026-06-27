@@ -42,12 +42,6 @@ const login = async (req, res) => {
 			success: false,
 		});
 
-		if (!singleUser.verified) return res.status(403).json({
-			code: 403,
-			message: "Account validation required. Please verify account or contact the administrator.",
-			success: false,
-		});
-
 		// restructure user data before returning with auth codes
 		let permissions = {
 			admin: singleUser.admin === 1 ? true : false,
@@ -97,6 +91,13 @@ const login = async (req, res) => {
 			user: singleUser,
 			success: true
 		}
+
+		if (!singleUser.verified) return res.status(200).json({
+			code: 200,
+			message: "Account validation required",
+			success: true,
+			authorization: authorization,
+		});
 
 		res.status(200).json({
 			code: 200,

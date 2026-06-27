@@ -69,10 +69,10 @@ const getUsers = async (req, res) => {
  */
 const registerUser = async (req, res) => {
 
-	const { token, userName, password } = req.body;
+	const { token, userName, email, password } = req.body;
 
 	// Validate inputs
-	if (!userName || !password) {
+	if (!userName || !email || !password) {
 		let message = "All fields are requied";
 		res.status(400).json({
 			code: 400,
@@ -136,17 +136,42 @@ const registerUser = async (req, res) => {
 
 			// Placeholders (?) to securely neutralize SQL injection risks
 			const result = await conn.query(
-				"INSERT INTO users (userName, password) VALUES (?, ?)",
-				[userName, hashedPassword]
+				"INSERT INTO users (userName, email, password) VALUES (?, ?, ?)",
+				[userName, email, hashedPassword]
 			);
 
 			await conn.commit();
 
-			res.status(201).json({
-				code: 201,
-				message: "User created successfully",
-				success: true,
+			body = {
+				userName: userName,
+				email: email
+			}
+
+			const verifyUrl = `https://${hostname}/api/mail/verify`;
+
+			const verifyResponse = await fetch(verifyUrl, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
 			});
+
+			const sentEmail = await verifyResponse.json();
+
+			if (!sentEmail.success) {
+				res.status(204).json({
+					code: 204,
+					message: "User code not sent",
+					success: false,
+				});
+
+			} else {
+				res.status(201).json({
+					code: 201,
+					message: "User created successfully",
+					success: true,
+				});
+			}
+
 		} else {
 			// Block the request
 			res.status(400).json({
@@ -535,4 +560,84 @@ const deleteUser = async (req, res) => {
 	}
 }
 
-module.exports = { getUsers, registerUser, changePassword, getUser, findUserByName, getUserPreferences, updateUser, deleteUser }
+/**
+ * Verify a new users email address.
+ * 
+ * @name verifyCode
+ * @route {POST} /api/users/verify
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+const verifyCode = async (req, res) => {
+
+	const userName = req.body.userName;
+	const verificationCode = Number(req.body.verificationCode);
+
+	// const userName = req.query.userName;
+	// const verificationCode = Number(req.query.verificationCode);
+
+	// Validate inputs
+	if (!userName || !verificationCode) {
+		let message = "All params are requied";
+		res.status(400).json({
+			code: 400,
+			message: message,
+			success: false,
+		});
+		throw new Error(message);
+	}
+
+	// Get a connection from the pool
+	const conn = await pool.getConnection();
+
+	try {
+
+		// Get user record by email
+		const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
+		const singleUser = users[0];
+
+		const codeValid = Date.parse(singleUser?.verificationExpires) > Date.now();
+
+		if (Number(singleUser.verificationCode) === verificationCode && codeValid) {
+
+			const queryText = `
+			UPDATE users 
+			SET 
+				verified = ? 
+			WHERE userName = ?
+			`;
+			const values = [1, userName];
+
+			await conn.query(queryText, values);
+			await conn.commit();
+
+			res.status(201).json({
+				code: 201,
+				message: "Code verified successfully",
+				success: true,
+			});
+
+		} else {
+			res.status(403).json({
+				code: 403,
+				message: "Verification code not valid.",
+				success: false,
+			});
+		}
+
+	} catch {
+		res.status(500).json({
+			code: 500,
+			message: "Verification failed.",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
+	}
+}
+
+module.exports = { getUsers, registerUser, changePassword, getUser, findUserByName, getUserPreferences, updateUser, deleteUser, verifyCode }
