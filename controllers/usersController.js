@@ -32,8 +32,12 @@ const getUsers = async (req, res) => {
 
 		rows.forEach(row => {
 			// password should never be shown in this response
+			// Also remove other things that don't need to be returned fir this.
 			delete row.password;
 			delete row.refreshToken;
+			delete row.uiDarkMode;
+			delete row.verificationCode;
+			delete row.verificationExpires;
 		});
 
 		// Send the JSON response
