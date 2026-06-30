@@ -63,6 +63,7 @@ const getMovieData = async (req, res) => {
 	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
 	const resultOffset = req.query.offset || 0;
 	const sortBy = req.query.sort || 'title';
+	const order = req.query.order || 'ASC';
 	const searchTerms = req.query.keyword || '';
 
 	// Get a connection from the pool
@@ -92,13 +93,8 @@ const getMovieData = async (req, res) => {
 			"slug",
 		]
 
-		// Execute the query
-		// const query = `SELECT ${columns} FROM metadata_items ORDER BY 
-		// CASE WHEN @sortBy = 'title' THEN title END, 
-		// CASE WHEN @sortBy = 'rating' THEN rating END, 
-		// CASE WHEN @sortBy = 'year' THEN year END`;
-		const query = `SELECT ${columns} FROM metadata_items WHERE title LIKE ? ORDER BY ? ASC LIMIT ? OFFSET ?`;
-		const rows = await conn.query(query, ['%' + searchTerms + '%', sortBy, Number(resultLimit), Number(resultOffset)]);
+		const query = `SELECT ${columns} FROM metadata_items WHERE title LIKE ? ORDER BY ${sortBy} ${order} LIMIT ? OFFSET ?`;
+		const rows = await conn.query(query, ['%' + searchTerms + '%', Number(resultLimit), Number(resultOffset)]);
 
 		// Send the JSON response
 		res.status(200).json({
