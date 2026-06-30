@@ -21,6 +21,7 @@ app.use("/api/serverInfo", require("./routes/serverInfoRoutes"));
 app.use("/api/mail", require("./routes/mailRoutes"));
 app.use("/api/userlogs", require("./routes/userLogsRoutes"));
 app.use("/api/movies", require("./routes/moviesRoutes"));
+app.use("/api/blog", require("./routes/blogRoutes"));
 // app.use("/api/verify-captcha", require("./routes/verifyCaptcha"));
 
 app.use(errorHandler);
