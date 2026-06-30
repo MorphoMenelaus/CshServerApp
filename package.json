@@ -1,6 +1,6 @@
 {
 	"name": "cshserverapp",
-	"version": "1.5.1",
+	"version": "1.5.2",
 	"description": "Backend NodeJS based server application",
 	"license": "ISC",
 	"author": "Hardwick Design",
