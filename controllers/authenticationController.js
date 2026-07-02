@@ -93,7 +93,7 @@ const login = async (req, res) => {
 
 		if (!singleUser.verified) return res.status(200).json({
 			code: 200,
-			message: "Account validation required",
+			message: "Login success",
 			success: true,
 			authorization: authorization,
 		});
