@@ -57,4 +57,42 @@ const getBlogData = async (req, res) => {
 	}
 }
 
-module.exports = { getBlogData };
+/**
+ * Retrieves all resume entries, if authenticated via an access token.
+ * 
+ * @name getResumeData
+ * @route {GET} /api/resume
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+const getResumeData = async (req, res) => {
+
+	const conn = await pool.getConnection();
+
+	try {
+
+		const resume = await conn.query(`SELECT id, title, company, dates, type, duties FROM resume`);
+
+		res.status(200).json({
+			code: 200,
+			message: "Resume query success",
+			success: true,
+			resume: resume,
+		});
+	} catch (error) {
+		console.error("Database Query Failed:", error);
+		res.status(500).json({
+			code: 500,
+			message: "Internal server error reading resume",
+			success: false,
+			error: error.message
+		});
+	} finally {
+		if (conn) conn.release();
+	}
+}
+
+module.exports = { getBlogData, getResumeData };

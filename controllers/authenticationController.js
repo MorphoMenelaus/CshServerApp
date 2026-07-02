@@ -12,7 +12,6 @@ const bcrypt = require('bcrypt');
  * 
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const login = async (req, res) => {
@@ -119,16 +118,14 @@ const login = async (req, res) => {
 
 
 /**
- * Refreshes an expired authentication token if the refresh token is valid and is no longer than a week old.
+ * Refreshes an expired authentication token if the refresh token is valid and is no more than a week old.
  * 
  * @name refresh
  * @route {POST} /api/auth/refresh
- * @access Restricted (Requires Bearer Token)
- * @auth Requires JWT access token in the Authorization header.
+ * @access public
  * 
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const refresh = async (req, res) => {
@@ -194,7 +191,12 @@ const refresh = async (req, res) => {
 			success: true
 		}
 
-		res.status(200).json(newAuthorization);
+		res.status(200).json({
+			code: 200,
+			message: "Logged in successfully",
+			success: true,
+			authorization: newAuthorization
+		});
 
 	} catch {
 		res.status(500).json({
@@ -222,25 +224,37 @@ const refresh = async (req, res) => {
  * @returns {Promise<void>}
  */
 const logout = async (req, res) => {
-	let conn = await pool.getConnection();
-
 	const { userName } = req.body;
 
-	// Remove refresh token from user record
-	const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = '' WHERE userName = '${userName}'`);
+	let conn = await pool.getConnection();
 
-	const logoutJson = {
-		accessToken: "",
-		accessTokenExpiration: "",
-		refreshToken: "",
-		message: "Logged out successfully",
-		success: true
+	try {
+		// Remove refresh token from user record
+		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = '' WHERE userName = '${userName}'`);
+
+		const logoutJson = {
+			accessToken: "",
+			accessTokenExpiration: "",
+			refreshToken: "",
+		}
+
+		res.status(200).json({
+			code: 200,
+			message: "Logged out successfully",
+			success: true,
+			logout: logoutJson
+		});
+
+	} catch {
+		res.status(500).json({
+			code: 500,
+			message: "Internal Server Error",
+			success: false,
+		});
+	} finally {
+		// Crucial: Always release the connection back to the pool
+		if (conn) conn.release();
 	}
-
-	res.json(logoutJson);
-
-	// Crucial: Always release the connection back to the pool
-	if (conn) conn.release();
 };
 
 module.exports = { login, refresh, logout };
