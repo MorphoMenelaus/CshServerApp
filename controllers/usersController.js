@@ -18,17 +18,20 @@ const getUsers = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
-	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
-	const resultOffset = req.query.offset || 0;
+	const reqLimit = req.query.limit;
+	const reqOffset = req.query.offset;
 
 	try {
+
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
 
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
 		// Execute the query
 		const query = `SELECT * FROM users ORDER BY userName DESC LIMIT ? OFFSET ?`;
-		const rows = await conn.execute(query, [resultLimit, resultOffset]);
+		const rows = await conn.execute(query, [limit, offset]);
 
 		rows.forEach(row => {
 			// password should never be shown in this response
