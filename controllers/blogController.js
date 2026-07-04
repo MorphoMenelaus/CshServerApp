@@ -17,8 +17,16 @@ const getBlogData = async (req, res) => {
 
 	const reqLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
 	const reqOffset = req.query.offset || 0;
-	const sortBy = req.query.sort || "post_title";
-	const order = req.query.order || "ASC";
+	const sortBy = req.query.sort;
+	const order = req.query.order;
+	const status = req.query.status;
+
+	const allowedSortColumns = ['post_author', 'post_date', 'post_title', 'post_id'];
+	const allowedOrderDirections = ['ASC', 'DESC'];
+	const allowedStatus = ['publish', 'hidden'];
+	const cleanSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'post_date';
+	const cleanOrder = allowedOrderDirections.includes(order?.toUpperCase()) ? order.toUpperCase() : 'ASC';
+	const cleanStatus = allowedStatus.includes(status) ? status : 'publish';
 
 	const conn = await pool.getConnection();
 
@@ -32,11 +40,12 @@ const getBlogData = async (req, res) => {
             post_content, post_title, post_excerpt, post_status, 
             post_password, post_name, post_modified, post_modified_gmt 
         FROM blogPosts 
-        ORDER BY ${sortBy} ${order} 
+		WHERE post_status = ? 
+        ORDER BY ${cleanSortBy} ${cleanOrder} 
         LIMIT ? OFFSET ?
     `;
 
-		const rows = await conn.query(query, [limit, offset]);
+		const rows = await conn.query(query, [cleanStatus, limit, offset]);
 
 		res.status(200).json({
 			code: 200,

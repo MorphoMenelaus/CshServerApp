@@ -17,19 +17,22 @@ const pool = require("../connection/dbConnection");
  */
 const getUserLogs = async (req, res) => {
 
-	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
-	const resultOffset = req.query.offset || 0;
+	const reqLimit = req.query.limit;
+	const reqOffset = req.query.offset;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
+
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
 		// Execute the query
 		const query = `SELECT * FROM userLogs ORDER BY entryId DESC LIMIT ? OFFSET ?`;
-		const rows = await conn.execute(query, [resultLimit, resultOffset]);
+		const rows = await conn.execute(query, [limit, offset]);
 
 		// Send the JSON response
 		res.status(200).json({
@@ -123,20 +126,23 @@ const addUserLogs = async (req, res) => {
  */
 const getClockLog = async (req, res) => {
 
-	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
-	const resultOffset = req.query.offset || 0;
+	const reqLimit = req.query.limit;
+	const reqOffset = req.query.offset;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
+
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
 		// Execute the query
 		const query = `SELECT * FROM simpleClockLog ORDER BY eventId DESC LIMIT ? OFFSET ?`;
-		const rows = await conn.execute(query, [resultLimit, resultOffset]);
+		const rows = await conn.execute(query, [limit, offset]);
 
 		// Convert driver-specific rows to a clean, standard JS array
 		const cleanRows = Array.from(rows).map(row => {

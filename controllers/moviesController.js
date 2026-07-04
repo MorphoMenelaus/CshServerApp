@@ -62,9 +62,14 @@ const getMovieData = async (req, res) => {
 
 	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
 	const resultOffset = req.query.offset || 0;
-	const sortBy = req.query.sort || 'title';
-	const order = req.query.order || 'ASC';
+	const sortBy = req.query.sort;
+	const order = req.query.order;
 	const searchTerms = req.query.keyword || '';
+
+	const allowedSortColumns = ['title', 'rating', 'audience_rating', 'year', 'tags_director', 'tags_genre'];
+	const allowedOrderDirections = ['ASC', 'DESC'];
+	const cleanSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'year';
+	const cleanOrder = allowedOrderDirections.includes(order?.toUpperCase()) ? order.toUpperCase() : 'DESC';
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -93,7 +98,7 @@ const getMovieData = async (req, res) => {
 			"slug",
 		]
 
-		const query = `SELECT ${columns} FROM metadata_items WHERE title LIKE ? ORDER BY ${sortBy} ${order} LIMIT ? OFFSET ?`;
+		const query = `SELECT ${columns} FROM metadata_items WHERE title LIKE ? ORDER BY ${cleanSortBy} ${cleanOrder} LIMIT ? OFFSET ?`;
 		const rows = await conn.query(query, ['%' + searchTerms + '%', Number(resultLimit), Number(resultOffset)]);
 
 		// Send the JSON response
