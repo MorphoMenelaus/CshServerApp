@@ -67,10 +67,10 @@ const getBlogData = async (req, res) => {
 }
 
 /**
- * Retrieves all resume entries, if authenticated via an access token.
+ * Retrieves all resume entries.
  * 
  * @name getResumeData
- * @route {GET} /api/resume
+ * @route {GET} /api/blog/resume
  * @access public
  * 
  * @param {Object} req - Express request object
@@ -104,4 +104,42 @@ const getResumeData = async (req, res) => {
 	}
 }
 
-module.exports = { getBlogData, getResumeData };
+/**
+ * Retrieves all app dev duty entries.
+ * 
+ * @name getAppDevDuties
+ * @route {GET} /api/blog/appduties
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+const getAppDevDuties = async (req, res) => {
+
+	const conn = await pool.getConnection();
+
+	try {
+
+		const appDevDuties = await conn.query(`SELECT id, company, appName, duties FROM appDevDuties`);
+
+		res.status(200).json({
+			code: 200,
+			message: "App Dev Duties query success",
+			success: true,
+			appDevDuties: appDevDuties,
+		});
+	} catch (error) {
+		console.error("Database Query Failed:", error);
+		res.status(500).json({
+			code: 500,
+			message: "Internal server error reading resume",
+			success: false,
+			error: error.message
+		});
+	} finally {
+		if (conn) conn.release();
+	}
+}
+
+module.exports = { getBlogData, getResumeData, getAppDevDuties };
