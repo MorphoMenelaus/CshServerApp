@@ -5,14 +5,21 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 app.use(express.json());
 
+const allowedDomains = [
+	process.env.ORIGIN,
+	process.env.STAGING_ORIGIN
+];
+
 app.use((req, res, next) => {
 	// *******************************************
 	// REMOVE "*" BEFORE PRODUCTION
 	// res.setHeader("Access-Control-Allow-Origin", "*");
 	// Works fine for testing but not secure for production
 	// *******************************************
-
-	res.setHeader("Access-Control-Allow-Origin", process.env.ORIGIN); // This line is for production
+	const origin = req.headers.origin;
+	if (allowedDomains.includes(origin)) {
+		res.setHeader("Access-Control-Allow-Origin", origin);
+	}
 	res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
 	res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 	res.setHeader("Access-Control-Allow-Credentials", true);
