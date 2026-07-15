@@ -77,8 +77,9 @@ const login = async (req, res) => {
 
 		// Save refresh token and last login into user record
 		const lastLoginTime = new Date().toISOString().slice(0, 23);
+		const userIp = req.ip;
 		const saveRefreshToken = await conn.query(`UPDATE users 
-			SET refreshToken = '${refreshToken}', lastLogin = '${lastLoginTime}' 
+			SET refreshToken = '${refreshToken}', lastLogin = '${lastLoginTime}', lastIp = '${userIp}' 
 			WHERE userName = '${singleUser.userName}'`);
 
 		let date = new Date();
@@ -193,7 +194,7 @@ const refresh = async (req, res) => {
 
 		res.status(200).json({
 			code: 200,
-			message: "Logged in successfully",
+			message: "Token refreshed successfully",
 			success: true,
 			authorization: newAuthorization
 		});

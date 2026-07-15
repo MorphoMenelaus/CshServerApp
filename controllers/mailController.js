@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const pool = require("../connection/dbConnection");
 const packageJson = require('../package.json');
 const nodemailer = require('nodemailer');
+const { validationResult } = require('express-validator');
 
 /**
  * Send contact email to a single systemAdmin account from user.
@@ -16,6 +17,17 @@ const nodemailer = require('nodemailer');
  * @returns {Promise<void>}
  */
 const sendContactMail = async (req, res) => {
+	const senderIp = req.ip;
+
+	const errors = validationResult(req);
+	if (!errors.isEmpty()) {
+		return res.status(400).json({
+			code: 400,
+			success: false,
+			errors: errors.array()
+		});
+
+	}
 
 	const { token, name, email, phone, subject, message } = req.body;
 
@@ -98,8 +110,9 @@ const sendContactMail = async (req, res) => {
             email, 
             phone, 
             subject, 
-            message) 
-			VALUES (?, ?, ?, ?, ?)
+            message, 
+			senderIp) 
+			VALUES (?, ?, ?, ?, ?, ?)
 			`;
 
 			const values = [
@@ -108,6 +121,7 @@ const sendContactMail = async (req, res) => {
 				phone,
 				subject,
 				message,
+				senderIp,
 			];
 
 			await conn.query(queryText, values);
