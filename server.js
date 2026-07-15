@@ -5,9 +5,13 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 app.use(express.json());
 
+// Look at X-Forwarded-For headers instead of local proxy connections
+app.set('trust proxy', '127.0.0.1'); // Only trust requests forwarded by localhost
+
 const allowedDomains = [
 	process.env.ORIGIN,
-	process.env.STAGING_ORIGIN
+	process.env.STAGING_ORIGIN,
+	process.env.REACT_ORIGIN
 ];
 
 app.use((req, res, next) => {

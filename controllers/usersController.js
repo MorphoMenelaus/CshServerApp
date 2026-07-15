@@ -437,7 +437,7 @@ const getUserPreferences = async (req, res) => {
  * @returns {Promise<void>}
  */
 const updateUser = async (req, res) => {
-	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, userNotes, verified } = req.body;
+	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified } = req.body;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -456,6 +456,7 @@ const updateUser = async (req, res) => {
             siteEditor = ?, 
             contributor = ?, 
             uiDarkMode = ?, 
+			locationDefault = ?, 
             userNotes = ?, 
 			verified = ? 
         WHERE userId = ?
@@ -470,6 +471,7 @@ const updateUser = async (req, res) => {
 			siteEditor,
 			contributor,
 			uiDarkMode,
+			locationDefault,
 			userNotes,
 			verified,
 			req.params.id
