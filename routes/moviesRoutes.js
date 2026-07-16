@@ -5,7 +5,7 @@ const { getMovieSlides, getMovieData, getFavoritesByMovieIds, updateSingleMovie,
 
 router.route("/slides").get(getMovieSlides);
 
-router.route("/").get(authenticateToken, getMovieData);
+router.route("/").get(getMovieData);
 
 router.route("/").post(authenticateToken, getFavoritesByMovieIds);
 

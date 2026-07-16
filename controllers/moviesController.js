@@ -46,16 +46,14 @@ const getMovieSlides = async (req, res) => {
 }
 
 /**
- * Retrieves logs all movies, if authenticated via an access token.
+ * Retrieves all movies from DB
  * 
  * @name getMovieData
  * @route {GET} /api/movies
- * @access Restricted (Requires Bearer Token)
- * @auth Requires JWT access token in the Authorization header.
+ * @access Public
  * 
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const getMovieData = async (req, res) => {
