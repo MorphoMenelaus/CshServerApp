@@ -31,6 +31,10 @@ const getUserData = async (req, res) => {
 
 		const data = await response.json();
 
+		delete data.api_token;
+		delete data.email;
+		delete data.toggl_accounts_id;
+
 		res.status(200).json({
 			code: 200,
 			message: "User query success",
@@ -113,6 +117,74 @@ const getTimeEntries = async (req, res) => {
 			message: "Time entries success",
 			success: true,
 			timeEntries: data,
+		});
+
+	} catch (error) {
+		res.status(500).json({
+			code: 500,
+			message: "Internal Server Error",
+			success: false,
+			error: error.message
+		});
+	}
+}
+
+/**
+ * Retrieves currently running time entries.
+ * 
+ * @name getCurrentTimeEntries
+ * @route {GET} /api/toggl/entries/current
+ * @access Restricted (Requires Bearer Token)
+ * @auth Requires JWT access token in the Authorization header.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @returns {Promise<void>}
+ */
+const getCurrentTimeEntries = async (req, res) => {
+	
+	const api_token = process.env.TOGGL_API_KEY;
+	const credentials = Buffer.from(`${api_token}:api_token`).toString('base64');
+
+	try {
+
+		const togglUrl = `https://api.track.toggl.com/api/v9/me/time_entries/current`;
+
+		const response = await fetch(togglUrl, {
+			method: "GET",
+			headers: {
+				"Authorization": `Basic ${credentials}`,
+				"Content-Type": "application/json"
+			}
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("Toggl Server Rejected Request:", errorText);
+			return res.status(response.status).json({
+				code: response.status,
+				success: false,
+				error: `Toggl responded with: ${errorText}`
+			});
+		}
+
+		const data = await response.json();
+
+		// data.forEach(item => {
+		// 	delete item.id;
+		// 	delete item.workspace_id;
+		// 	delete item.task_id;
+		// 	delete item.billable;
+		// 	delete item.duronly;
+		// 	delete item.server_deleted_at;
+		// });
+
+		res.status(200).json({
+			code: 200,
+			message: "Time entries success",
+			success: true,
+			currentEntries: data,
 		});
 
 	} catch (error) {
@@ -331,4 +403,4 @@ const stopTime = async (req, res) => {
 	}
 }
 
-module.exports = { getUserData, getTimeEntries, getProjects, startTime, stopTime };
+module.exports = { getUserData, getTimeEntries, getCurrentTimeEntries, getProjects, startTime, stopTime };
