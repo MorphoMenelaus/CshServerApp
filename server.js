@@ -46,6 +46,7 @@ app.use("/api/mail", require("./routes/mailRoutes"));
 app.use("/api/userlogs", require("./routes/userLogsRoutes"));
 app.use("/api/movies", require("./routes/moviesRoutes"));
 app.use("/api/blog", require("./routes/blogRoutes"));
+app.use("/api/toggl", require("./routes/togglRoutes"));
 
 app.use(errorHandler);
 
