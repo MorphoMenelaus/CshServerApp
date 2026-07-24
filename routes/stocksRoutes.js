@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { getStocks } = require("../controllers/stocksController");
+const { searchSeries, getStocks } = require("../controllers/stocksController");
+
+router.route("/search").get(searchSeries);
 
 router.route("/").get(getStocks);
 

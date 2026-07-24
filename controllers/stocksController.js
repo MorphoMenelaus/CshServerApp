@@ -4,6 +4,74 @@ const packageJson = require('../package.json');
 /**
  * Retrieves server version.
  * 
+ * @name searchSeries
+ * @route {GET} /api/stocks/search
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
+const searchSeries = async (req, res) => {
+	const { search_text, limit } = req.query;
+
+	if (!search_text) {
+		let message = "Search tems required";
+		res.status(400).json({
+			code: 400,
+			message: message,
+			success: false,
+		});
+		throw new Error(message);
+	}
+
+	const cleanSearch = search_text.replaceAll("%20", "+");
+
+	// The Federal Reserve Bank of St. Louis (FRED) does not enforce a strict daily limit for free API calls.
+	// Instead, the free API restricts usage to 120 requests per minute.
+	const api_token = process.env.FRED_API_KEY;
+
+	try {
+		const fredUrl = `https://api.stlouisfed.org/fred/series/search?search_text=${cleanSearch}&limit=${limit}&api_key=${api_token}&file_type=json`;
+
+		const response = await fetch(fredUrl, {
+			method: "GET",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("FRED server Rejected Request:", errorText);
+			return res.status(response.status).json({
+				code: response.status,
+				success: false,
+				error: `FRED server responded with: ${errorText}`
+			});
+		}
+
+		const data = await response.json();
+
+		res.status(200).json({
+			code: 200,
+			message: "Stock data success",
+			success: true,
+			seriesData: data,
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({
+			code: 500,
+			message: `Server not responding: ${error.message}`,
+			success: false,
+		});
+	}
+}
+
+/**
+ * Retrieves server version.
+ * 
  * @name getStocks
  * @route {GET} /api/stocks
  * @access public
@@ -40,8 +108,6 @@ const getStocks = async (req, res) => {
 	const api_token = process.env.FRED_API_KEY;
 
 	try {
-
-		let stocksData = [];
 
 		const fredUrl = `https://api.stlouisfed.org/fred/series/observations?series_id=${cleanSeries}&api_key=${api_token}&file_type=json&observation_start=${observation_start}&observation_end=${observation_end}&limit=${cleanLimit}&offset=${cleanOffset}`;
 
@@ -80,4 +146,4 @@ const getStocks = async (req, res) => {
 	}
 }
 
-module.exports = { getStocks };
+module.exports = { searchSeries, getStocks };
