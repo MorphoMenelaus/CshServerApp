@@ -76,6 +76,9 @@ const getMovieData = async (req, res) => {
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
+		const rowCount = await conn.query(`SELECT COUNT(*) FROM metadata_items`);
+		const cleanRowCount = Number(Object.values(rowCount[0])[0]);
+
 		const columns = [
 			"movieId",
 			"title",
@@ -105,12 +108,13 @@ const getMovieData = async (req, res) => {
 			message: "Movies query success",
 			success: true,
 			movies: rows,
+			tableRowCount: cleanRowCount,
 		});
 
 	} catch (error) {
 		res.status(500).json({
 			code: 500,
-			message: "Database query failed",
+			message: `Database query failed: ${error.message}`,
 			success: false,
 		});
 	} finally {

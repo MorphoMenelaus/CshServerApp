@@ -29,6 +29,16 @@ const getUserData = async (req, res) => {
 			}
 		})
 
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("Toggl Server Rejected Request:", errorText);
+			return res.status(response.status).json({
+				code: response.status,
+				success: false,
+				error: `Toggl responded with: ${errorText}`
+			});
+		}
+
 		const data = await response.json();
 
 		delete data.api_token;
@@ -143,7 +153,7 @@ const getTimeEntries = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getCurrentTimeEntries = async (req, res) => {
-	
+
 	const api_token = process.env.TOGGL_API_KEY;
 	const credentials = Buffer.from(`${api_token}:api_token`).toString('base64');
 
@@ -316,6 +326,16 @@ const startTime = async (req, res) => {
 			},
 			body: JSON.stringify(body)
 		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error("Toggl Server Rejected Request:", errorText);
+			return res.status(response.status).json({
+				code: response.status,
+				success: false,
+				error: `Toggl responded with: ${errorText}`
+			});
+		}
 
 		const data = await response.json();
 
