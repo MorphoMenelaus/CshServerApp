@@ -33,7 +33,7 @@ function authenticateToken(req, res, next) {
 			next();
 		});
 		
-	} catch (error) {
+	} catch {
 		return res.status(403).json({
 			code: 403,
 			message: "Invalid or Expired Token",

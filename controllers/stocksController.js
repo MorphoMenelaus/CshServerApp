@@ -59,11 +59,10 @@ const searchSeries = async (req, res) => {
 			success: true,
 			seriesData: data,
 		});
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
-			message: `Server not responding: ${error.message}`,
+			message: `Server not responding`,
 			success: false,
 		});
 	}
@@ -136,11 +135,10 @@ const getStocks = async (req, res) => {
 			success: true,
 			stocks: data,
 		});
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
-			message: `Server not responding: ${error.message}`,
+			message: `Server not responding`,
 			success: false,
 		});
 	}

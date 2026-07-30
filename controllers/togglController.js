@@ -52,12 +52,11 @@ const getUserData = async (req, res) => {
 			users: data,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal Server Error",
 			success: false,
-			error: error.message
 		});
 	}
 }
@@ -82,8 +81,8 @@ const getTimeEntries = async (req, res) => {
 	if (!start_date || !end_date) {
 		return res.status(400).json({
 			code: 400,
+			message: "Missing query arguments",
 			success: false,
-			error: "Missing query arguments"
 		});
 	}
 
@@ -129,12 +128,11 @@ const getTimeEntries = async (req, res) => {
 			timeEntries: data,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal Server Error",
 			success: false,
-			error: error.message
 		});
 	}
 }
@@ -197,12 +195,11 @@ const getCurrentTimeEntries = async (req, res) => {
 			currentEntries: data,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal Server Error",
 			success: false,
-			error: error.message
 		});
 	}
 }
@@ -257,12 +254,11 @@ const getProjects = async (req, res) => {
 			projects: data,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal Server Error",
 			success: false,
-			error: error.message
 		});
 	}
 }
@@ -346,12 +342,11 @@ const startTime = async (req, res) => {
 			startInstance: data
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal Server Error.",
 			success: false,
-			error: error.message
 		});
 	}
 }
@@ -413,12 +408,11 @@ const stopTime = async (req, res) => {
 			data: data
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal Server Error.",
 			success: false,
-			error: error.message
 		});
 	}
 }

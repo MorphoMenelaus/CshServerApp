@@ -42,7 +42,7 @@ const getUserLogs = async (req, res) => {
 			logs: rows,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -99,7 +99,7 @@ const addUserLogs = async (req, res) => {
 			success: true,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Insert log failed.",
@@ -151,9 +151,13 @@ const getClockLog = async (req, res) => {
 			return rest;
 		});
 
-		res.status(200).json(cleanRows);
-	} catch (error) {
-		console.error(error);
+		res.status(200).json({
+			code: 200,
+			message: "Get Clock logs success",
+			success: false,
+			clockLogs: cleanRows,
+		});
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -199,8 +203,7 @@ const logSimpleClock = async (req, res) => {
 			message: "Log entry added",
 			success: true
 		});
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Insert record failed",

@@ -51,7 +51,7 @@ const getUsers = async (req, res) => {
 			users: rows,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -183,8 +183,8 @@ const registerUser = async (req, res) => {
 			// Block the request
 			res.status(400).json({
 				code: 400,
+				message: "Bot activity detected.",
 				success: false,
-				message: "Bot activity detected."
 			});
 		}
 
@@ -315,14 +315,13 @@ const getUser = async (req, res) => {
 
 		// Send the JSON response
 		res.status(200).json({
-			user: singleUser,
 			code: 200,
 			message: "Database query success",
 			success: true,
+			user: singleUser,
 		});
 
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -366,14 +365,13 @@ const findUserByName = async (req, res) => {
 		});
 
 		res.status(200).json({
-			users: rows,
 			code: 200,
 			message: `Database query - ${searchTerms} -  success`,
 			success: true,
+			users: rows,
 		});
 
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -408,10 +406,14 @@ const getUserPreferences = async (req, res) => {
 		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = "${req.params.id}"`);
 
 		// Send the JSON response
-		res.status(200).json(rows);
+		res.status(200).json({
+			code: 200,
+			message: "User Preferences Success",
+			success: true,
+			rows: rows
+		});
 
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -556,8 +558,7 @@ const deleteUser = async (req, res) => {
 			success: true,
 		});
 
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Delete failed",

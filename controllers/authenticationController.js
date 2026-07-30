@@ -284,23 +284,26 @@ const checkToken = async (req, res) => {
 		if (singleUser?.refreshToken !== refreshToken) {
 			res.status(200).json({
 				code: 200,
-				tokenValid: false,
+				message: "Refresh Token Invalid",
 				success: false,
+				tokenValid: false,
 			});
 		}
 
 		jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, userName) => {
 			if (err) return res.status(200).json({
 				code: 200,
-				tokenValid: false,
+				message: "Refresh Token Invalid",
 				success: false,
+				tokenValid: false,
 			});
 		});
 
 		res.status(200).json({
 			code: 200,
-			tokenValid: true,
+			message: "Refresh Token Validated",
 			success: true,
+			tokenValid: true,
 		});
 
 	} catch {
@@ -314,4 +317,48 @@ const checkToken = async (req, res) => {
 	}
 }
 
-module.exports = { login, refresh, logout, checkToken };
+/**
+ * Check if the access token is valid and bot expired.
+ * 
+ * @name checkIfExpired
+ * @route {POST} /api/auth/tokenexpired
+ * @access public
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - If there is no 500 internal error, returns code 200 with a Boolean for tokenValid.
+ * @returns {Promise<void>}
+ */
+const checkIfExpired = async (req, res) => {
+	const { accessToken } = req.body;
+
+	try {
+
+		jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, decodedPayload) => {
+			// If verification fails (expired, altered token, etc.), return 403 Forbidden
+			if (err) {
+				return res.status(200).json({
+					code: 200,
+					message: "Access Token invalid",
+					success: true,
+					tokenValid: false,
+				});
+			}
+		});
+
+		res.status(200).json({
+			code: 200,
+			message: "Access Token Validated",
+			success: true,
+			tokenValid: true,
+		});
+
+	} catch {
+		res.status(500).json({
+			code: 500,
+			message: "Internal Server Error",
+			success: false,
+		});
+	}
+}
+
+module.exports = { login, refresh, logout, checkToken, checkIfExpired };
