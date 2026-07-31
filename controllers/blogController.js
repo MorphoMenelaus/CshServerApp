@@ -53,13 +53,11 @@ const getBlogData = async (req, res) => {
 			success: true,
 			posts: rows,
 		});
-	} catch (error) {
-		console.error("Database Query Failed:", error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal server error reading blog posts",
 			success: false,
-			error: error.message
 		});
 	} finally {
 		if (conn) conn.release();
@@ -91,13 +89,11 @@ const getResumeData = async (req, res) => {
 			success: true,
 			resume: resume,
 		});
-	} catch (error) {
-		console.error("Database Query Failed:", error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal server error reading resume",
 			success: false,
-			error: error.message
 		});
 	} finally {
 		if (conn) conn.release();
@@ -129,13 +125,11 @@ const getAppDevDuties = async (req, res) => {
 			success: true,
 			appDevDuties: appDevDuties,
 		});
-	} catch (error) {
-		console.error("Database Query Failed:", error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Internal server error reading resume",
 			success: false,
-			error: error.message
 		});
 	} finally {
 		if (conn) conn.release();

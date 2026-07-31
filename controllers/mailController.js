@@ -23,6 +23,7 @@ const sendContactMail = async (req, res) => {
 	if (!errors.isEmpty()) {
 		return res.status(400).json({
 			code: 400,
+			message: "See Errors Array",
 			success: false,
 			errors: errors.array()
 		});
@@ -137,12 +138,11 @@ const sendContactMail = async (req, res) => {
 			// Block the request
 			res.status(400).json({
 				code: 400,
+				message: "Bot activity detected.",
 				success: false,
-				message: "Bot activity detected."
 			});
 		}
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Send Email Failed",
@@ -235,8 +235,7 @@ const sendVerificationMail = async (req, res) => {
 			success: true,
 			verify: verify
 		});
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Verification send Failed",

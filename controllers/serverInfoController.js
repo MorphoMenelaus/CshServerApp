@@ -16,11 +16,11 @@ const getVersion = async (req, res) => {
 	try {
 		// Send the JSON response
 		res.status(200).json({
+			code: 200,
 			version: packageJson.version,
 			success: true,
 		});
-	} catch (error) {
-		console.error(error);
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Server not responding",

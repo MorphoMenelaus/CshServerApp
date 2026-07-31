@@ -33,7 +33,7 @@ const getMovieSlides = async (req, res) => {
 			slides: rows,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -111,10 +111,10 @@ const getMovieData = async (req, res) => {
 			tableRowCount: cleanRowCount,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
-			message: `Database query failed: ${error.message}`,
+			message: `Database query failed`,
 			success: false,
 		});
 	} finally {
@@ -177,7 +177,7 @@ const getFavoritesByMovieIds = async (req, res) => {
 			movies: rows,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
@@ -332,7 +332,7 @@ const getMovieFavorite = async (req, res) => {
 			userFavorites,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Get movie favorites failed.",
@@ -388,7 +388,7 @@ const removeMovieFavorite = async (req, res) => {
 			success: true,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Remove favorite failed.",
@@ -451,7 +451,7 @@ const addMovieFavorite = async (req, res) => {
 			success: true,
 		});
 
-	} catch (error) {
+	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Insert favorite failed.",
