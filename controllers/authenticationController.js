@@ -261,7 +261,7 @@ const logout = async (req, res) => {
  * Check if the refresh token is valid and is no more than a week old.
  * 
  * @name checkToken
- * @route {POST} /api/auth/checkToken
+ * @route {POST} /api/auth/tokencheck
  * @access public
  * 
  * @param {Object} req - Express request object
@@ -318,7 +318,7 @@ const checkToken = async (req, res) => {
 }
 
 /**
- * Check if the access token is valid and bot expired.
+ * Check if the access token is valid and not expired.
  * 
  * @name checkIfExpired
  * @route {POST} /api/auth/tokenexpired
