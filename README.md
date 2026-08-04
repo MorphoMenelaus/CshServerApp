@@ -1,2 +1,2 @@
 # CshServerApp
-NodeJS based server application
+NodeJS based REST API server application
