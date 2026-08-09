@@ -51,6 +51,7 @@ app.use("/api/movies", require("./routes/moviesRoutes"));
 app.use("/api/blog", require("./routes/blogRoutes"));
 app.use("/api/toggl", require("./routes/togglRoutes"));
 app.use("/api/stocks", require("./routes/stocksRoutes"));
+app.use("/api/gemini", require("./routes/geminiRoutes"));
 
 app.use(errorHandler);
 

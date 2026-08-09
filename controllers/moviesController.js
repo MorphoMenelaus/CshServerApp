@@ -316,8 +316,8 @@ const getMovieFavorite = async (req, res) => {
 
 		const usersData = await conn.query(`SELECT movieFavorites FROM userStore WHERE userId = '${userId}'`);
 		if (!usersData?.length > 0) {
-			res.status(201).json({
-				code: 201,
+			res.status(200).json({
+				code: 200,
 				message: `userStore does not exist or favorites list is empty`,
 				success: true,
 				userFavorites: [],
@@ -325,8 +325,8 @@ const getMovieFavorite = async (req, res) => {
 		}
 		const userFavorites = usersData[0].movieFavorites;
 
-		res.status(201).json({
-			code: 201,
+		res.status(200).json({
+			code: 200,
 			message: `Movie favorites retrieved successfully`,
 			success: true,
 			userFavorites,
