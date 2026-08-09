@@ -2,7 +2,7 @@ const pool = require("../connection/dbConnection");
 const packageJson = require('../package.json');
 
 /**
- * Retrieves server version.
+ * Search stock series by keyword. Returns information about any matches.
  * 
  * @name searchSeries
  * @route {GET} /api/stocks/search
@@ -69,7 +69,7 @@ const searchSeries = async (req, res) => {
 }
 
 /**
- * Retrieves server version.
+ * Get latest data points for stock series.
  * 
  * @name getStocks
  * @route {GET} /api/stocks
