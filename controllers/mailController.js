@@ -35,10 +35,16 @@ const sendContactMail = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
+	const allowedHosts = [
+		process.env.HOSTNAME,
+		process.env.STAGING_HOSTNAME,
+	];
+
+	const reqHost = req.headers.host;
 	const adminEmail = process.env.ADMIN_EMAIL;
 	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
 	const siteKey = process.env.RECAPTCHA_SITE_KEY;
-	const hostname = process.env.HOSTNAME;
+	const hostName = allowedHosts.includes(reqHost) ? reqHost : "";
 
 	// Create a reusable transporter using secure SMTP configuration
 	const transporter = nodemailer.createTransport({
@@ -80,7 +86,7 @@ const sendContactMail = async (req, res) => {
 		}
 
 		// Check if the assessment verdict is safe
-		if (data?.score >= 0.5 && data?.hostname === hostname) {
+		if (data?.score >= 0.5 && data?.hostname === hostName) {
 
 			const mailOptions = {
 				from: `"CSH App System" <${process.env.SMTP_USER}>`,
@@ -173,7 +179,7 @@ const sendVerificationMail = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
-	const hostname = process.env.HOSTNAME;
+	const hostName = process.env.HOSTNAME;
 
 	// Create a reusable transporter using secure SMTP configuration
 	const transporter = nodemailer.createTransport({
@@ -202,9 +208,9 @@ const sendVerificationMail = async (req, res) => {
 			subject: `Email Verification Code`,
 			html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
 				<h1>Thanks for registering, ${userName}</h1>
-				<h2 style="color: #4f84d9;">Please, click the link or enter the code on the login screen.</h2>
+				<h2 style="color: #4f84d9;">Please, click the link or enter the code on the verify page.</h2>
 				<h3>
-				<a href="https://${hostname}/verify?userName=${userName}&verificationCode=${verificationCode}">Click to verify email</a>
+				<a href="https://${hostName}/verify?userName=${userName}&verificationCode=${verificationCode}">Click to verify email</a>
 				</h3>
 				<p>Your verification code is valid for 5 minutes:</p>
 				<hr />
