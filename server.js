@@ -38,8 +38,8 @@ app.use((req, res, next) => {
 // 	// *******************************************
 // 	// REMOVE BEFORE PRODUCTION
 // 	// *******************************************
-// 	origin: 'http://localhost:5173', // Your Vue localhost URL
-// 	methods: ['GET', 'PUT', 'OPTIONS'],
+// 	origin: 'http://localhost:5173', // localhost URL
+// 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 // 	allowedHeaders: ['Authorization', 'Content-Type'] // Explicitly allow Authorization
 // }));
 
