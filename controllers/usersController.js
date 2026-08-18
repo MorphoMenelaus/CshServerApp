@@ -89,9 +89,15 @@ const registerUser = async (req, res) => {
 		throw new Error(message);
 	}
 
+	const allowedHosts = [
+		process.env.HOSTNAME,
+		process.env.STAGING_HOSTNAME,
+	];
+
+	const reqHost = req.headers.host;
 	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
 	const siteKey = process.env.RECAPTCHA_SITE_KEY;
-	const hostname = process.env.HOSTNAME;
+	const hostName = allowedHosts.includes(reqHost) ? reqHost : "";
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
@@ -125,7 +131,7 @@ const registerUser = async (req, res) => {
 		}
 
 		// Check if the assessment verdict is safe
-		if (data?.score >= 0.5 && data?.hostname === hostname) {
+		if (data?.score >= 0.5 && data?.hostname === hostName) {
 
 			// Hash password with 10 salt rounds
 			const hashedPassword = await bcrypt.hash(password, 10);
@@ -154,7 +160,7 @@ const registerUser = async (req, res) => {
 				email: email
 			}
 
-			const verifyUrl = `https://${hostname}/api/mail/verify`;
+			const verifyUrl = `https://${hostName}/api/mail/verify`;
 
 			const verifyResponse = await fetch(verifyUrl, {
 				method: 'POST',
@@ -245,8 +251,8 @@ const changePassword = async (req, res) => {
 			isPasswordValid = await bcrypt.compare(currentPassword, singleUser.password);
 		}
 
-		if (!isPasswordValid) return res.status(400).json({
-			code: 400,
+		if (!isPasswordValid) return res.status(401).json({
+			code: 401,
 			message: "Invalid credentials",
 			success: false,
 		});
@@ -266,7 +272,7 @@ const changePassword = async (req, res) => {
 
 		res.status(201).json({
 			code: 201,
-			message: "Password changed successfully",
+			message: "Password changed successfully. Please log in again.",
 			success: true,
 		});
 
@@ -631,9 +637,9 @@ const verifyCode = async (req, res) => {
 			});
 
 		} else {
-			res.status(403).json({
-				code: 403,
-				message: "Verification code not valid.",
+			res.status(401).json({
+				code: 401,
+				message: "Verification code not valid or expired.",
 				success: false,
 			});
 		}

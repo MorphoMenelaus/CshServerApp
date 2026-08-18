@@ -14,7 +14,8 @@ app.set('trust proxy', '127.0.0.1'); // Only trust requests forwarded by localho
 const allowedDomains = [
 	process.env.ORIGIN,
 	process.env.STAGING_ORIGIN,
-	process.env.REACT_ORIGIN
+	process.env.REACT_ORIGIN,
+	process.env.LOCAL_ORIGIN
 ];
 
 app.use((req, res, next) => {
@@ -37,8 +38,8 @@ app.use((req, res, next) => {
 // 	// *******************************************
 // 	// REMOVE BEFORE PRODUCTION
 // 	// *******************************************
-// 	origin: 'http://localhost:5173', // Your Vue localhost URL
-// 	methods: ['GET', 'PUT', 'OPTIONS'],
+// 	origin: 'http://localhost:5173', // localhost URL
+// 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 // 	allowedHeaders: ['Authorization', 'Content-Type'] // Explicitly allow Authorization
 // }));
 
@@ -53,10 +54,10 @@ app.use("/api/toggl", require("./routes/togglRoutes"));
 app.use("/api/stocks", require("./routes/stocksRoutes"));
 app.use("/api/gemini", require("./routes/geminiRoutes"));
 
-app.use(errorHandler);
+// app.use(errorHandler);
 
 const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
 	console.log(`Server running on port ${port}`);
-});	
+});

@@ -235,7 +235,7 @@ const jobMatch = async (req, res) => {
 											- keyPitch: 2-3 sentences summarizing fit.
 											- matchingSkills: 3-5 bullet points linking specific candidate achievements to job requirements.
 											- gaps: list of addressable gaps or areas for growth.
-											- tailoredInterviewQuestions: 3 specific technical/behavioral interview questions the hiring manager should ask Chris to highlight their expertise.
+											- tailoredInterviewQuestions: 3 specific technical/behavioral interview questions the hiring manager should ask Chris to highlight his expertise.
 											`,
 				responseMimeType: "application/json",
 				responseSchema: {
