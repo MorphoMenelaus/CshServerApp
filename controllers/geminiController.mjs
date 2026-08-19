@@ -36,7 +36,7 @@ const generalQuestion = async (req, res) => {
 		const interaction = await ai.interactions.create({
 			model: "gemini-3.6-flash",
 			input: promptString,
-			system_instruction: "Answer questions using only clean, modern semantic HTML tags (like <p>, <strong>, <ul>, <li>, <a>)."
+			system_instruction: "Answer questions using only clean, modern semantic HTML tags (like <h1>, <h2>, <p>, <strong>, <ul>, <li>, <a>). <a> tags should use the target attribute set to _blank."
 		});
 		res.json({
 			status: "ok",
