@@ -17,28 +17,31 @@ const getGeminiClient = () => {
 };
 
 /**
- * Healthcheck endpoint.
+ * General Question endpoint.
  * 
- * @name healthCheck
- * @route {GET} /api/gemini/health
+ * @name generalQuestion
+ * @route {GET} /api/gemini/question
  * @access public
  * 
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * @param {Object} req object
+ * @param {Object} res object
  * @returns {Promise<void>}
  */
-const healthCheck = async (req, res) => {
+const generalQuestion = async (req, res) => {
+	const { prompt } = req.body;
+	const promptString = prompt || "Explain how AI works in a few words";
+
 	try {
-		const inputText = "Explain how AI works in a few words";
 		const ai = getGeminiClient();
 		const interaction = await ai.interactions.create({
 			model: "gemini-3.6-flash",
-			input: inputText,
+			input: promptString,
+			system_instruction: "Answer questions using only clean, modern semantic HTML tags (like <h1>, <h2>, <p>, <strong>, <ul>, <li>, <a>). <a> tags should use the target attribute set to _blank."
 		});
 		res.json({
 			status: "ok",
 			timestamp: new Date().toISOString(),
-			input: inputText,
+			input: promptString,
 			output: interaction.output_text
 		});
 	} catch (error) {
@@ -360,4 +363,4 @@ const explainCode = async (req, res) => {
 	}
 }
 
-export { healthCheck, personaChatbot, jobMatch, explainCode };
+export { generalQuestion, personaChatbot, jobMatch, explainCode };

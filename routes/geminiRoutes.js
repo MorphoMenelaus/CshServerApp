@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
-const { healthCheck, personaChatbot, jobMatch, explainCode } = require("../controllers/geminiController.mjs");
+const { generalQuestion, personaChatbot, jobMatch, explainCode } = require("../controllers/geminiController.mjs");
 
-router.route("/health").get(healthCheck);
+router.route("/question").post(generalQuestion);
 
 router.route("/chat").post(authenticateToken, personaChatbot);
 
