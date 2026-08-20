@@ -3,7 +3,7 @@ const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
 const { generalQuestion, personaChatbot, jobMatch, explainCode } = require("../controllers/geminiController.mjs");
 
-router.route("/question").post(generalQuestion);
+router.route("/question").post(authenticateToken, generalQuestion);
 
 router.route("/chat").post(authenticateToken, personaChatbot);
 
