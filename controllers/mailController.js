@@ -27,7 +27,6 @@ const sendContactMail = async (req, res) => {
 			success: false,
 			errors: errors.array()
 		});
-
 	}
 
 	const { token, name, email, phone, subject, message } = req.body;

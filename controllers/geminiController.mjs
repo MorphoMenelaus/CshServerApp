@@ -50,7 +50,7 @@ const generalQuestion = async (req, res) => {
 			code: 500,
 			success: false,
 			status: "error",
-			message: error.message || "Failed to perform health check.",
+			message: error.message || "Failed to answer question.",
 		});
 	}
 }
