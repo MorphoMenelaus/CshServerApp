@@ -34,25 +34,19 @@ const sendContactMail = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
-	const allowedHosts = [
-		process.env.HOSTNAME,
-		process.env.STAGING_HOSTNAME,
-	];
-
-	const reqHost = req.headers.host;
-	const adminEmail = process.env.ADMIN_EMAIL;
-	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
-	const siteKey = process.env.RECAPTCHA_SITE_KEY;
-	const hostName = allowedHosts.includes(reqHost) ? reqHost : "";
+	const adminEmail = req.tenant.emails.admin;
+	const apiKey = req.tenant.recaptcha.secretKey;
+	const siteKey = req.tenant.recaptcha.siteKey;
+	const hostName = req.tenant.hostName;
 
 	// Create a reusable transporter using secure SMTP configuration
 	const transporter = nodemailer.createTransport({
-		host: process.env.SMTP_HOST,
+		host: req.tenant.smtp.host,
 		port: Number(process.env.SMTP_PORT),
 		secure: true, // true for port 465, false for other ports like 587
 		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASS,
+			user: req.tenant.smtp.user,
+			pass: req.tenant.smtp.pass,
 		},
 	});
 
@@ -88,8 +82,8 @@ const sendContactMail = async (req, res) => {
 		if (data?.score >= 0.5 && data?.hostname === hostName) {
 
 			const mailOptions = {
-				from: `"CSH App System" <${process.env.SMTP_USER}>`,
-				to: process.env.ADMIN_EMAIL,
+				from: `"CSH App System" <${req.tenant.smtp.user}>`,
+				to: `${adminEmail}`,
 				subject: `${subject}`,
 				text: `${message}`, // Plain text fallback
 				html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
@@ -178,16 +172,16 @@ const sendVerificationMail = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
-	const hostName = process.env.HOSTNAME;
+	const hostName = req.tenant.hostName;
 
 	// Create a reusable transporter using secure SMTP configuration
 	const transporter = nodemailer.createTransport({
-		host: process.env.SMTP_HOST,
+		host: req.tenant.smtp.host,
 		port: Number(process.env.SMTP_PORT),
 		secure: true, // true for port 465, false for other ports like 587
 		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASS,
+			user: req.tenant.smtp.user,
+			pass: req.tenant.smtp.pass,
 		},
 	});
 
@@ -202,7 +196,7 @@ const sendVerificationMail = async (req, res) => {
 		const verificationExpires = Date.now() + 5 * 60 * 1000;
 
 		const mailOptions = {
-			from: `"CSH App System" <${process.env.NOREPLY_EMAIL}>`,
+			from: `"CSH App System" <${req.tenant.emails.noReply}>`,
 			to: email,
 			subject: `Email Verification Code`,
 			html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">

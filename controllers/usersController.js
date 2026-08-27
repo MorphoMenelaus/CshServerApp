@@ -23,7 +23,7 @@ const getUsers = async (req, res) => {
 
 	try {
 
-		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : 10;
 		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
 
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
@@ -89,15 +89,9 @@ const registerUser = async (req, res) => {
 		throw new Error(message);
 	}
 
-	const allowedHosts = [
-		process.env.HOSTNAME,
-		process.env.STAGING_HOSTNAME,
-	];
-
-	const reqHost = req.headers.host;
-	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
-	const siteKey = process.env.RECAPTCHA_SITE_KEY;
-	const hostName = allowedHosts.includes(reqHost) ? reqHost : "";
+	const apiKey = req.tenant.recaptcha.secretKey;
+	const siteKey = req.tenant.recaptcha.siteKey;
+	const hostName = req.tenant.hostName;
 
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
