@@ -58,7 +58,7 @@ const getMovieSlides = async (req, res) => {
  */
 const getMovieData = async (req, res) => {
 
-	const resultLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
+	const resultLimit = req.query.limit || 10;
 	const resultOffset = req.query.offset || 0;
 	const sortBy = req.query.sort;
 	const order = req.query.order;

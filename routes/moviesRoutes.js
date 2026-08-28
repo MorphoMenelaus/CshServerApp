@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authenticateToken = require("../middleware/authenticationHandler");
+const authorizeRoles = require("../middleware/rolesHandler");
 const { getMovieSlides, getMovieData, getFavoritesByMovieIds, updateSingleMovie, getMovieFavorite, removeMovieFavorite, addMovieFavorite } = require("../controllers/moviesController");
 
 router.route("/slides").get(getMovieSlides);
@@ -9,7 +10,7 @@ router.route("/").get(getMovieData);
 
 router.route("/").post(authenticateToken, getFavoritesByMovieIds);
 
-router.route("/:movieId").put(authenticateToken, updateSingleMovie);
+router.route("/:movieId").put(authenticateToken, authorizeRoles("admin"), updateSingleMovie);
 
 router.route("/favorites/:userId").get(authenticateToken, getMovieFavorite);
 

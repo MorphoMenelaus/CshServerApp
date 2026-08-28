@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const pool = require("../connection/dbConnection");
 const packageJson = require('../package.json');
 const nodemailer = require('nodemailer');
+const { verifyHandler } = require('../services/userService');
 const { validationResult } = require('express-validator');
 
 /**
@@ -27,7 +28,6 @@ const sendContactMail = async (req, res) => {
 			success: false,
 			errors: errors.array()
 		});
-
 	}
 
 	const { token, name, email, phone, subject, message } = req.body;
@@ -35,25 +35,19 @@ const sendContactMail = async (req, res) => {
 	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
-	const allowedHosts = [
-		process.env.HOSTNAME,
-		process.env.STAGING_HOSTNAME,
-	];
-
-	const reqHost = req.headers.host;
-	const adminEmail = process.env.ADMIN_EMAIL;
-	const apiKey = process.env.RECAPTCHA_SECRET_KEY;
-	const siteKey = process.env.RECAPTCHA_SITE_KEY;
-	const hostName = allowedHosts.includes(reqHost) ? reqHost : "";
+	const adminEmail = req.tenant.emails.admin;
+	const apiKey = req.tenant.recaptcha.secretKey;
+	const siteKey = req.tenant.recaptcha.siteKey;
+	const hostName = req.tenant.hostName;
 
 	// Create a reusable transporter using secure SMTP configuration
 	const transporter = nodemailer.createTransport({
-		host: process.env.SMTP_HOST,
+		host: req.tenant.smtp.host,
 		port: Number(process.env.SMTP_PORT),
 		secure: true, // true for port 465, false for other ports like 587
 		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASS,
+			user: req.tenant.smtp.user,
+			pass: req.tenant.smtp.pass,
 		},
 	});
 
@@ -89,8 +83,8 @@ const sendContactMail = async (req, res) => {
 		if (data?.score >= 0.5 && data?.hostname === hostName) {
 
 			const mailOptions = {
-				from: `"CSH App System" <${process.env.SMTP_USER}>`,
-				to: process.env.ADMIN_EMAIL,
+				from: `"CSH App System" <${req.tenant.smtp.user}>`,
+				to: `${adminEmail}`,
 				subject: `${subject}`,
 				text: `${message}`, // Plain text fallback
 				html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
@@ -174,82 +168,31 @@ const sendContactMail = async (req, res) => {
  */
 const sendVerificationMail = async (req, res) => {
 
-	const { userName, email } = req.body;
-
-	// Get a connection from the pool
-	const conn = await pool.getConnection();
-
-	const hostName = process.env.HOSTNAME;
-
-	// Create a reusable transporter using secure SMTP configuration
-	const transporter = nodemailer.createTransport({
-		host: process.env.SMTP_HOST,
-		port: Number(process.env.SMTP_PORT),
-		secure: true, // true for port 465, false for other ports like 587
-		auth: {
-			user: process.env.SMTP_USER,
-			pass: process.env.SMTP_PASS,
-		},
-	});
-
-	// Generate a secure 6-digit OTP
-	function generateOTP() {
-		return crypto.randomInt(100000, 999999).toString();
-	}
-
 	try {
 
-		const verificationCode = generateOTP();
-		const verificationExpires = Date.now() + 5 * 60 * 1000;
+		const verify = await verifyHandler(req, res);
 
-		const mailOptions = {
-			from: `"CSH App System" <${process.env.NOREPLY_EMAIL}>`,
-			to: email,
-			subject: `Email Verification Code`,
-			html: `<div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
-				<h1>Thanks for registering, ${userName}</h1>
-				<h2 style="color: #4f84d9;">Please, click the link or enter the code on the verify page.</h2>
-				<h3>
-				<a href="https://${hostName}/verify?userName=${userName}&verificationCode=${verificationCode}">Click to verify email</a>
-				</h3>
-				<p>Your verification code is valid for 5 minutes:</p>
-				<hr />
-				<h1 style="color: #4CAF50; letter-spacing: 2px;">${verificationCode}</h1>
-				<p>If you did not request this, please ignore this email.</p>
-				<small style="color: #777;">Sent automatically by the CSH Application.</small>
-				</div>`,
-		};
+		if (!verify.success) {
+			res.status(204).json({
+				code: 204,
+				message: "User code not sent",
+				success: false,
+			});
+		} else {
+			res.status(201).json({
+				code: 201,
+				message: "Verification sent successfully",
+				success: true,
+			});
+		}
 
-		const verify = await transporter.sendMail(mailOptions);
-
-		// Add verificationCode into users record
-		const queryText = `
-			UPDATE users 
-			SET 
-				verificationCode = ?, 
-				verificationExpires = FROM_UNIXTIME(? / 1000) 
-				WHERE userName = ?
-			`;
-		const values = [verificationCode, verificationExpires, userName];
-
-		await conn.query(queryText, values);
-		await conn.commit();
-
-		res.status(200).json({
-			code: 200,
-			message: "Verification sent successfully",
-			success: true,
-			verify: verify
-		});
 	} catch {
 		res.status(500).json({
+			error: error,
 			code: 500,
 			message: "Verification send Failed",
 			success: false,
 		});
-	} finally {
-		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
 	}
 }
 

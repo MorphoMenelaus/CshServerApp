@@ -28,7 +28,8 @@ function authenticateToken(req, res, next) {
 				});
 			}
 
-			req.userName = decodedPayload;
+			req.userName = decodedPayload.userName;
+			req.roles = decodedPayload?.roles || [];
 
 			next();
 		});

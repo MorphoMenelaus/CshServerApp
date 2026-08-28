@@ -60,10 +60,19 @@ const login = async (req, res) => {
 		delete singleUser.contributor;
 		delete singleUser.verified;
 
-		// Generate stateless token with identity payload
+		let roles = [];
+		for (const role in permissions) {
+			if (permissions[role])
+				roles.push(role);
+		}
+
+		// Generate stateless token with identity and roles payload
 		// Set the accessToken expireTime for 1 hour
 		const token = jwt.sign(
-			{ userName: singleUser.userName },
+			{
+				userName: singleUser.userName,
+				roles: roles
+			},
 			process.env.ACCESS_TOKEN_SECRET,
 			{ expiresIn: '1h' }
 		);
@@ -159,10 +168,27 @@ const refresh = async (req, res) => {
 			});
 		});
 
+		let permissions = {
+			admin: singleUser.admin === 1 ? true : false,
+			siteAdmin: singleUser.siteAdmin === 1 ? true : false,
+			siteEditor: singleUser.siteEditor === 1 ? true : false,
+			contributor: singleUser.contributor === 1 ? true : false,
+			verified: singleUser.verified === 1 ? true : false
+		}
+
+		let roles = [];
+		for (const role in permissions) {
+			if (permissions[role])
+				roles.push(role);
+		}
+
 		// Generate stateless token with identity payload
 		// Set the accessToken expireTime for 1 hour
 		const newToken = jwt.sign(
-			{ userName: singleUser.userName },
+			{
+				userName: singleUser.userName,
+				roles: roles
+			},
 			process.env.ACCESS_TOKEN_SECRET,
 			{ expiresIn: '1h' }
 		);

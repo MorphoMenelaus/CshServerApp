@@ -15,7 +15,7 @@ const pool = require("../connection/dbConnection");
  */
 const getBlogData = async (req, res) => {
 
-	const reqLimit = req.query.limit || process.env.LIST_LIMIT_DEFAULT;
+	const reqLimit = req.query.limit || 10;
 	const reqOffset = req.query.offset || 0;
 	const sortBy = req.query.sort;
 	const order = req.query.order;
@@ -31,7 +31,7 @@ const getBlogData = async (req, res) => {
 	const conn = await pool.getConnection();
 
 	try {
-		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : 10;
 		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
 
 		const query = `

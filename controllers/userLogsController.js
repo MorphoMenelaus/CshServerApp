@@ -24,7 +24,7 @@ const getUserLogs = async (req, res) => {
 	const conn = await pool.getConnection();
 
 	try {
-		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : 10;
 		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
 
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
@@ -134,7 +134,7 @@ const getClockLog = async (req, res) => {
 
 	try {
 
-		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : Number(process.env.LIST_LIMIT_DEFAULT);
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : 10;
 		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
 
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
