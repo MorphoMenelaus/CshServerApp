@@ -31,9 +31,6 @@ function authorizeRoles(...requiredRoles) {
 			});
 		}
 
-		console.log(requiredRoles);
-		console.log(req.roles);
-
 		const isAdmin = req.roles.includes("admin");
 		if (isAdmin) return next();
 
@@ -53,8 +50,6 @@ function authorizeRoles(...requiredRoles) {
 		// Check if the user's role is in the allowed list
 		const roleSet = new Set(requiredRoles);
 		const hasAllowedRole = req.roles.some(item => roleSet.has(item));
-
-		console.log(hasAllowedRole);
 
 		if (!hasAllowedRole) {
 			return res.status(403).json({

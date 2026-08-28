@@ -1,12 +1,3 @@
-const TENANT_MAP = {
-	"https://cshardwick.com": "CSHAPP",
-	"https://cshapp.hardwick.design": "VUE3DB",
-	"https://vue3db.hardwick.design": "CSHARDWICK",
-	"http://wavefunctioncreative.com": "WFC",
-	"https://csh-react.hardwick.design": "REACT",
-	"http://localhost:5173": "LOCAL"
-};
-
 /**
  * Multi-tenant handler verifies that origins match an allowed list.
  * Dynamically builds the configuration object matchinng the tenantPrefix to .env file properties.
@@ -21,7 +12,26 @@ const TENANT_MAP = {
  * @returns {<void>}
  */
 const tenantConfigMiddleware = (req, res, next) => {
-	const origin = req.headers.origin;
+	const TENANT_MAP = {
+		"https://cshardwick.com": "CSHARDWICK",
+		"https://cshapp.hardwick.design": "CSHAPP",
+		"https://vue3db.hardwick.design": "VUE3DB",
+		"http://wavefunctioncreative.com": "WFC",
+		"https://csh-react.hardwick.design": "REACT",
+		"http://localhost:5173": "LOCAL"
+	};
+
+	let origin = req.headers.origin;
+
+	// Fallback: If origin is missing, extract the base origin from the Referer header
+	if (!origin && req.headers.referer) {
+		try {
+			const refererUrl = new URL(req.headers.referer);
+			origin = refererUrl.origin;
+		} catch (e) {
+			return res.status(403).json({ error: "Unknown origin" });
+		}
+	}
 
 	// *******************************************
 	// REMOVE "*" BEFORE PRODUCTION
@@ -36,7 +46,7 @@ const tenantConfigMiddleware = (req, res, next) => {
 		// Warning: Postman headers...
 		// When Postman might send req.headers.host but req.headers.origin will be undefined.
 		// Postman might fail this check, especially if on localhost environment.
-		return res.status(403).json({ error: "Unauthorized origin" });
+		return res.status(403).json({ error: "Unauthorized or unknown origin" });
 	}
 
 	res.setHeader("Access-Control-Allow-Origin", process.env[`${tenantPrefix}_ORIGIN`]);

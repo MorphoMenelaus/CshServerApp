@@ -1,5 +1,6 @@
 const pool = require("../connection/dbConnection");
 const bcrypt = require('bcrypt');
+const { verifyHandler } = require('../services/userService');
 
 /**
  * Retrieves the full details of all users, if authenticated via an access token.
@@ -149,20 +150,7 @@ const registerUser = async (req, res) => {
 
 			await conn.commit();
 
-			body = {
-				userName: userName,
-				email: email
-			}
-
-			const verifyUrl = `https://${hostName}/api/mail/verify`;
-
-			const verifyResponse = await fetch(verifyUrl, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(body)
-			});
-
-			const sentEmail = await verifyResponse.json();
+			const sentEmail = await verifyHandler(req, res);
 
 			if (!sentEmail.success) {
 				res.status(204).json({
@@ -544,8 +532,6 @@ const deleteUser = async (req, res) => {
 	const conn = await pool.getConnection();
 
 	try {
-
-		console.log(req.params.id);
 
 		// Delete user records
 		await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);

@@ -9,7 +9,11 @@ const app = express();
 app.use(express.json());
 
 // Look at X-Forwarded-For headers instead of local proxy connections
-app.set('trust proxy', '127.0.0.1'); // Only trust requests forwarded by localhost
+// Only trust requests forwarded by localhost
+app.set('trust proxy', '127.0.0.1');
+
+// if having problems with server using IPv6 loopback addresses instead of standard IPv4
+// app.set('trust proxy', ['127.0.0.1', '::1']);
 
 app.use("/api", require("./middleware/tenantMiddleware"));
 app.use("/api/auth", require("./routes/authenticationRoutes"));
