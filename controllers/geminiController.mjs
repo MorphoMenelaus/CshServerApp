@@ -45,7 +45,6 @@ const generalQuestion = async (req, res) => {
 			output: interaction.output_text
 		});
 	} catch (error) {
-		console.error("Health check error:", error);
 		res.status(500).json({
 			code: 500,
 			success: false,
@@ -171,7 +170,6 @@ const personaChatbot = async (req, res) => {
 			citations: parsed.citations || [],
 		});
 	} catch (error) {
-		console.error("Chat API error:", error);
 		res.status(500).json({
 			code: 500,
 			message: error.message || "Failed to process AI chat request.",
@@ -277,7 +275,6 @@ const jobMatch = async (req, res) => {
 			analysis: result
 		});
 	} catch (error) {
-		console.error("Match API error:", error);
 		res.status(500).json({
 			code: 500,
 			message: error.message || "Failed to analyze job match.",
@@ -354,7 +351,6 @@ const explainCode = async (req, res) => {
 			explanation: result
 		});
 	} catch (error) {
-		console.error("Code explain error:", error);
 		res.status(500).json({
 			code: 500,
 			message: error.message || "Failed to explain code snippet.",

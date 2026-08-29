@@ -15,7 +15,6 @@ const verifyHandler = async (req, res) => {
 
 	const { userName, email } = req.body;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	const hostName = req.tenant.hostName;
@@ -70,12 +69,12 @@ const verifyHandler = async (req, res) => {
 			`;
 		const values = [verificationCode, verificationExpires, userName];
 
-		await conn.query(queryText, values);
+		await conn.execute(queryText, values);
 		await conn.commit();
 
 		res.status(200).json({
 			code: 200,
-			message: "Verification sent successfully",
+			message: "Verification email sent successfully",
 			success: true,
 			verify: verify
 		});

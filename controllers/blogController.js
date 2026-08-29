@@ -44,8 +44,7 @@ const getBlogData = async (req, res) => {
         ORDER BY ${cleanSortBy} ${cleanOrder} 
         LIMIT ? OFFSET ?
     `;
-
-		const rows = await conn.query(query, [cleanStatus, limit, offset]);
+		const rows = await conn.execute(query, [cleanStatus, limit, offset]);
 
 		res.status(200).json({
 			code: 200,
@@ -81,7 +80,7 @@ const getResumeData = async (req, res) => {
 
 	try {
 
-		const resume = await conn.query(`SELECT id, title, company, dates, type, duties FROM resume`);
+		const resume = await conn.execute(`SELECT id, title, company, dates, type, duties FROM resume`);
 
 		res.status(200).json({
 			code: 200,
@@ -117,7 +116,7 @@ const getAppDevDuties = async (req, res) => {
 
 	try {
 
-		const appDevDuties = await conn.query(`SELECT id, company, appName, duties FROM appDevDuties`);
+		const appDevDuties = await conn.execute(`SELECT id, company, appName, duties FROM appDevDuties`);
 
 		res.status(200).json({
 			code: 200,

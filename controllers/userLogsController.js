@@ -20,7 +20,6 @@ const getUserLogs = async (req, res) => {
 	const reqLimit = req.query.limit;
 	const reqOffset = req.query.offset;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
@@ -30,11 +29,9 @@ const getUserLogs = async (req, res) => {
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
-		// Execute the query
 		const query = `SELECT * FROM userLogs ORDER BY entryId DESC LIMIT ? OFFSET ?`;
 		const rows = await conn.execute(query, [limit, offset]);
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: "User logs query success",
@@ -74,7 +71,6 @@ const addUserLogs = async (req, res) => {
 	const conn = await pool.getConnection();
 
 	try {
-		// Validate inputs
 		if (!userId || !userName || !actionPerformed) {
 			let message = "All fields are requied";
 			res.status(400).json({
@@ -129,7 +125,6 @@ const getClockLog = async (req, res) => {
 	const reqLimit = req.query.limit;
 	const reqOffset = req.query.offset;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
@@ -140,7 +135,6 @@ const getClockLog = async (req, res) => {
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
-		// Execute the query
 		const query = `SELECT * FROM simpleClockLog ORDER BY eventId DESC LIMIT ? OFFSET ?`;
 		const rows = await conn.execute(query, [limit, offset]);
 
@@ -185,12 +179,10 @@ const getClockLog = async (req, res) => {
 const logSimpleClock = async (req, res) => {
 	const { userId, userName, eventType, isWakeupEvent, notes } = req.body;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		// Paceholders (?) to securely neutralize SQL injection risks
 		const result = await conn.query(
 			"INSERT INTO simpleClockLog (userId, userName, eventType, isWakeupEvent, notes) VALUES (?, ?, ?, ?, ?)",
 			[userId, userName, eventType, isWakeupEvent, notes]

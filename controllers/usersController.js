@@ -16,7 +16,6 @@ const { verifyHandler } = require('../services/userService');
  * @returns {Promise<void>}
  */
 const getUsers = async (req, res) => {
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	const reqLimit = req.query.limit;
@@ -30,13 +29,12 @@ const getUsers = async (req, res) => {
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.query("COMMIT");
 
-		// Execute the query
 		const query = `SELECT * FROM users ORDER BY userName DESC LIMIT ? OFFSET ?`;
 		const rows = await conn.execute(query, [limit, offset]);
 
 		rows.forEach(row => {
 			// password should never be shown in this response
-			// Also remove other things that don't need to be returned fir this.
+			// Also remove other things that don't need to be returned for this.
 			delete row.password;
 			delete row.refreshToken;
 			delete row.uiDarkMode;
@@ -44,7 +42,6 @@ const getUsers = async (req, res) => {
 			delete row.verificationExpires;
 		});
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: "User list query success",
@@ -79,7 +76,6 @@ const registerUser = async (req, res) => {
 
 	const { token, userName, email, password } = req.body;
 
-	// Validate inputs
 	if (!userName || !email || !password) {
 		let message = "All fields are requied";
 		res.status(400).json({
@@ -94,7 +90,6 @@ const registerUser = async (req, res) => {
 	const siteKey = req.tenant.recaptcha.siteKey;
 	const hostName = req.tenant.hostName;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
@@ -131,8 +126,8 @@ const registerUser = async (req, res) => {
 			// Hash password with 10 salt rounds
 			const hashedPassword = await bcrypt.hash(password, 10);
 
-			// Verify usreName is unique
-			const rows = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
+			// Verify userName is unique
+			const rows = await conn.query(`SELECT * FROM users WHERE userName = ?`, [userName]);
 			if (rows?.length > 0) {
 				res.status(400).json({
 					code: 400,
@@ -142,8 +137,7 @@ const registerUser = async (req, res) => {
 				throw new Error("User name already exists");
 			}
 
-			// Placeholders (?) to securely neutralize SQL injection risks
-			const result = await conn.query(
+			await conn.query(
 				"INSERT INTO users (userName, email, password) VALUES (?, ?, ?)",
 				[userName, email, hashedPassword]
 			);
@@ -206,11 +200,9 @@ const changePassword = async (req, res) => {
 
 	const { userId, currentPassword, password } = req.body;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
-		// Validate inputs
 		if (!currentPassword || !password) {
 			let message = "All fields are requied";
 			res.status(400).json({
@@ -222,7 +214,7 @@ const changePassword = async (req, res) => {
 		}
 
 		// Get user record
-		const users = await conn.query(`SELECT * FROM users WHERE userId = '${userId}'`);
+		const users = await conn.query(`SELECT * FROM users WHERE userId = ?`, [userId]);
 		let singleUser = users[0];
 
 		const isBcryptHash = singleUser.password.startsWith('$2b$') || singleUser.password.startsWith('$2a$');
@@ -242,13 +234,13 @@ const changePassword = async (req, res) => {
 		// Hash password with 10 salt rounds
 		const hashedPassword = await bcrypt.hash(password, 10);
 
-		const result = await conn.query(
-			`UPDATE users SET password = ? WHERE userId = '${userId}'`,
-			[hashedPassword]
+		await conn.query(
+			`UPDATE users SET password = ? WHERE userId = ?`,
+			[hashedPassword, userId]
 		);
 
 		// Remove refresh token from user record
-		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = '' WHERE userId = '${userId}'`);
+		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = ? WHERE userId = ?`, ['', userId]);
 
 		await conn.commit();
 
@@ -285,13 +277,12 @@ const changePassword = async (req, res) => {
  */
 const getUser = async (req, res) => {
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
 
-		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = ?`, [req.params.id]);
 
 		rows.forEach(row => {
 			// password should never be shown in this response
@@ -301,7 +292,6 @@ const getUser = async (req, res) => {
 
 		let singleUser = rows[0];
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: "Database query success",
@@ -338,13 +328,12 @@ const findUserByName = async (req, res) => {
 
 	const searchTerms = req.params.userName || "";
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
 		const query = `SELECT * FROM users WHERE userName LIKE ?`;
-		const rows = await conn.query(query, ['%' + searchTerms + '%']);
+		const rows = await conn.query(query, [`%${searchTerms}%`]);
 
 		rows.forEach(row => {
 			// password should never be shown in this response
@@ -385,15 +374,12 @@ const findUserByName = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getUserPreferences = async (req, res) => {
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		// Execute the query
-		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = "${req.params.id}"`);
+		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = ?`, [req.params.id]);
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: "User Preferences Success",
@@ -429,12 +415,10 @@ const getUserPreferences = async (req, res) => {
 const updateUser = async (req, res) => {
 	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified } = req.body;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		// Placeholders (?) to securely neutralize SQL injection risks
 		const queryText = `
         UPDATE users 
         SET 
@@ -468,11 +452,9 @@ const updateUser = async (req, res) => {
 		];
 
 		await conn.query(queryText, values);
-
 		await conn.commit();
 
-		const rows = await conn.query(`SELECT * FROM users WHERE userId = '${req.params.id}'`);
-
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = ?`, [req.params.id]);
 		let singleUser = rows[0];
 
 		// restructure user data before returning
@@ -528,16 +510,14 @@ const updateUser = async (req, res) => {
  * @returns {Promise<void>}
  */
 const deleteUser = async (req, res) => {
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
 		// Delete user records
-		await conn.query(`DELETE FROM users WHERE userId = '${req.params.id}'`);
-		await conn.query(`DELETE FROM userStore WHERE userId = '${req.params.id}'`);
+		await conn.query(`DELETE FROM users WHERE userId = ?`, [req.params.id]);
+		await conn.query(`DELETE FROM userStore WHERE userId = ?`, [req.params.id]);
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: `User Deleted`,
@@ -572,10 +552,6 @@ const verifyCode = async (req, res) => {
 	const userName = req.body.userName;
 	const verificationCode = Number(req.body.verificationCode);
 
-	// const userName = req.query.userName;
-	// const verificationCode = Number(req.query.verificationCode);
-
-	// Validate inputs
 	if (!userName || !verificationCode) {
 		let message = "All params are requied";
 		res.status(400).json({
@@ -586,13 +562,12 @@ const verifyCode = async (req, res) => {
 		throw new Error(message);
 	}
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
 		// Get user record by email
-		const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
+		const users = await conn.query(`SELECT * FROM users WHERE userName = ?`, [userName]);
 		const singleUser = users[0];
 
 		const codeValid = Date.parse(singleUser?.verificationExpires) > Date.now();
@@ -602,7 +577,7 @@ const verifyCode = async (req, res) => {
 			const queryText = `
 			UPDATE users 
 			SET 
-				verified = ? 
+			verified = ? 
 			WHERE userName = ?
 			`;
 			const values = [1, userName];

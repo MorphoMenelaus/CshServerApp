@@ -28,7 +28,7 @@ const tenantConfigMiddleware = (req, res, next) => {
 		try {
 			const refererUrl = new URL(req.headers.referer);
 			origin = refererUrl.origin;
-		} catch (e) {
+		} catch {
 			return res.status(403).json({ error: "Unknown origin" });
 		}
 	}
@@ -44,7 +44,7 @@ const tenantConfigMiddleware = (req, res, next) => {
 	if (!tenantPrefix) {
 		// Fail early if the origin isn"t recognized or allowed.
 		// Warning: Postman headers...
-		// When Postman might send req.headers.host but req.headers.origin will be undefined.
+		// Postman might send req.headers.host but req.headers.origin will be undefined.
 		// Postman might fail this check, especially if on localhost environment.
 		return res.status(403).json({ error: "Unauthorized or unknown origin" });
 	}

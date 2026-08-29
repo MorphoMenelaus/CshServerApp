@@ -1,6 +1,3 @@
-const pool = require("../connection/dbConnection");
-const packageJson = require('../package.json');
-
 /**
  * Search stock series by keyword. Returns information about any matches.
  * 
