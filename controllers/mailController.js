@@ -31,7 +31,7 @@ const sendContactMail = async (req, res) => {
 
 	const { token, name, email, phone, subject, message } = req.body;
 
-	if (phone > 12) {
+	if (phone && phone.length > 12) {
 		return res.status(400).json({
 			code: 400,
 			message: "Phone number is too long.",
