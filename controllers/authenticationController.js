@@ -1,5 +1,4 @@
 const pool = require("../connection/dbConnection");
-const packageJson = require('../package.json');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
@@ -17,15 +16,13 @@ const bcrypt = require('bcrypt');
 const login = async (req, res) => {
 	const { userName, password } = req.body;
 
-	// Get a connection from the pool
 	let conn = await pool.getConnection();
 
 	try {
 		// Get user record
-		const users = await conn.query(`SELECT * FROM users WHERE userName = '${userName}'`);
+		const userQuery = `SELECT * FROM users WHERE userName = ?`;
+		const users = await conn.execute(userQuery, [userName]);
 		let singleUser = users[0];
-
-		// const user = users.find(u => u.userName === userName);
 
 		const isBcryptHash = singleUser.password.startsWith('$2b$') || singleUser.password.startsWith('$2a$');
 
@@ -87,9 +84,9 @@ const login = async (req, res) => {
 		// Save refresh token and last login into user record
 		const lastLoginTime = new Date().toISOString().slice(0, 23);
 		const userIp = req.ip;
-		const saveRefreshToken = await conn.query(`UPDATE users 
-			SET refreshToken = '${refreshToken}', lastLogin = '${lastLoginTime}', lastIp = '${userIp}' 
-			WHERE userName = '${singleUser.userName}'`);
+		const queryText = `UPDATE users SET refreshToken = ?, lastLogin = ?, lastIp = ? WHERE userName = ?`;
+		const values = [refreshToken, lastLoginTime, userIp, singleUser.userName];
+		await conn.execute(queryText, values);
 
 		let date = new Date();
 		const expireTime = date.setHours(date.getHours() + 1);
@@ -140,13 +137,13 @@ const login = async (req, res) => {
 const refresh = async (req, res) => {
 	const { accessToken, refreshToken } = req.body;
 
-	// Get a connection from the pool
 	let conn = await pool.getConnection();
 
 	try {
 
 		// Match active refresh token and get user record
-		const users = await conn.query(`SELECT * FROM users WHERE refreshToken = '${refreshToken}'`);
+		const userQuery = `SELECT * FROM users WHERE refreshToken = ?`;
+		const users = await conn.execute(userQuery, [refreshToken]);
 		let singleUser = users[0];
 		let userName = singleUser?.userName;
 
@@ -203,9 +200,9 @@ const refresh = async (req, res) => {
 
 		// Save refresh token and last login into user record
 		const lastLoginTime = new Date().toISOString().slice(0, 23);
-		const saveRefreshToken = await conn.query(`UPDATE users 
-			SET refreshToken = '${newRefreshToken}', lastLogin = '${lastLoginTime}' 
-			WHERE userName = '${singleUser.userName}'`);
+		const query = `UPDATE users SET refreshToken = ?, lastLogin = ? WHERE userName = ?`;
+		const values = [newRefreshToken, lastLoginTime, singleUser.userName];
+		await conn.execute(query, values);
 
 		// Set the accessToken expireTime for 1 hour
 		let date = new Date();
@@ -256,7 +253,8 @@ const logout = async (req, res) => {
 
 	try {
 		// Remove refresh token from user record
-		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = '' WHERE userName = '${userName}'`);
+		const query = `UPDATE users SET refreshToken = ? WHERE userName = ?`;
+		await conn.execute(query, ['', userName]);
 
 		const logoutJson = {
 			accessToken: "",
@@ -297,13 +295,13 @@ const logout = async (req, res) => {
 const checkToken = async (req, res) => {
 	const { accessToken, refreshToken } = req.body;
 
-	// Get a connection from the pool
 	let conn = await pool.getConnection();
 
 	try {
 
 		// Match active refresh token and get user record
-		const users = await conn.query(`SELECT * FROM users WHERE refreshToken = '${refreshToken}'`);
+		const userQuery = `SELECT * FROM users WHERE refreshToken = ?`;
+		const users = await conn.execute(userQuery, [refreshToken]);
 		let singleUser = users[0];
 		let userName = singleUser?.userName;
 

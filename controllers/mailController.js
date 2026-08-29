@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 const pool = require("../connection/dbConnection");
-const packageJson = require('../package.json');
 const nodemailer = require('nodemailer');
 const { verifyHandler } = require('../services/userService');
 const { validationResult } = require('express-validator');
@@ -32,7 +31,14 @@ const sendContactMail = async (req, res) => {
 
 	const { token, name, email, phone, subject, message } = req.body;
 
-	// Get a connection from the pool
+	if (phone > 12) {
+		return res.status(400).json({
+			code: 400,
+			message: "Phone number is too long.",
+			success: false,
+		});
+	}
+
 	const conn = await pool.getConnection();
 
 	const adminEmail = req.tenant.emails.admin;
@@ -125,7 +131,7 @@ const sendContactMail = async (req, res) => {
 				senderIp,
 			];
 
-			await conn.query(queryText, values);
+			await conn.execute(queryText, values);
 			await conn.commit();
 
 			res.status(200).json({
@@ -181,7 +187,7 @@ const sendVerificationMail = async (req, res) => {
 		} else {
 			res.status(201).json({
 				code: 201,
-				message: "Verification sent successfully",
+				message: "Verification email sent successfully",
 				success: true,
 			});
 		}

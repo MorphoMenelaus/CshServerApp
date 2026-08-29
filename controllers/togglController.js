@@ -1,6 +1,3 @@
-const pool = require("../connection/dbConnection");
-const packageJson = require('../package.json');
-
 /**
  * Retrieves Toggl user.
  * 

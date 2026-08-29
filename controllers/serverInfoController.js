@@ -14,7 +14,6 @@ const packageJson = require('../package.json');
  */
 const getVersion = async (req, res) => {
 	try {
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			version: packageJson.version,

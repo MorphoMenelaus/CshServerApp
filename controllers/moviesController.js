@@ -1,5 +1,4 @@
 const pool = require("../connection/dbConnection");
-const packageJson = require('../package.json');
 
 /**
  * Retrieves slideshow images and data.
@@ -13,7 +12,6 @@ const packageJson = require('../package.json');
  * @returns {Promise<void>}
  */
 const getMovieSlides = async (req, res) => {
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	const resultLimit = req.query.limit || 5;
@@ -21,11 +19,9 @@ const getMovieSlides = async (req, res) => {
 
 	try {
 
-		// Execute the query
 		const query = `SELECT * FROM carousel LIMIT ? OFFSET ?`;
 		const rows = await conn.execute(query, [resultLimit, resultOffset]);
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: "Movie slides query success",
@@ -69,40 +65,37 @@ const getMovieData = async (req, res) => {
 	const cleanSortBy = allowedSortColumns.includes(sortBy) ? sortBy : 'year';
 	const cleanOrder = allowedOrderDirections.includes(order?.toUpperCase()) ? order.toUpperCase() : 'DESC';
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
-		await conn.query("COMMIT");
+		await conn.execute("COMMIT");
 
-		const rowCount = await conn.query(`SELECT COUNT(*) FROM metadata_items`);
+		const rowCount = await conn.query("SELECT COUNT(*) FROM metadata_items");
 		const cleanRowCount = Number(Object.values(rowCount[0])[0]);
 
-		const columns = [
-			"movieId",
-			"title",
-			"original_title",
-			"tagline",
-			"summary",
-			"studio",
-			"rating",
-			"content_rating",
-			"duration",
-			"tags_genre",
-			"tags_director",
-			"tags_writer",
-			"tags_star",
-			"year",
-			"tags_country",
-			"audience_rating",
-			"slug",
-		]
+		const allowedColumns = [
+			"movieId", "title", "original_title", "tagline", "summary", "studio",
+			"rating", "content_rating", "duration", "tags_genre", "tags_director",
+			"tags_writer", "tags_star", "year", "tags_country", "audience_rating", "slug"
+		];
+		// Join allowed columns array into a clean SQL string
+		const selectColumns = allowedColumns.join(', ');
 
-		const query = `SELECT ${columns} FROM metadata_items WHERE title LIKE ? ORDER BY ${cleanSortBy} ${cleanOrder} LIMIT ? OFFSET ?`;
-		const rows = await conn.query(query, ['%' + searchTerms + '%', Number(resultLimit), Number(resultOffset)]);
+		const query = `
+				SELECT ${selectColumns} 
+				FROM metadata_items 
+				WHERE title LIKE ? 
+				ORDER BY ${cleanSortBy} ${cleanOrder} 
+				LIMIT ? OFFSET ?
+				`;
 
-		// Send the JSON response
+		const rows = await conn.execute(query, [
+			`%${searchTerms}%`,
+			Number(resultLimit),
+			Number(resultOffset)
+		]);
+
 		res.status(200).json({
 			code: 200,
 			message: "Movies query success",
@@ -139,37 +132,23 @@ const getMovieData = async (req, res) => {
 const getFavoritesByMovieIds = async (req, res) => {
 	const { movieIds } = req.body;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		const columns = [
-			"movieId",
-			"title",
-			"original_title",
-			"tagline",
-			"summary",
-			"studio",
-			"rating",
-			"content_rating",
-			"duration",
-			"tags_genre",
-			"tags_director",
-			"tags_writer",
-			"tags_star",
-			"year",
-			"tags_country",
-			"audience_rating",
-			"slug",
-		]
+		const allowedColumns = [
+			"movieId", "title", "original_title", "tagline", "summary", "studio",
+			"rating", "content_rating", "duration", "tags_genre", "tags_director",
+			"tags_writer", "tags_star", "year", "tags_country", "audience_rating", "slug"
+		];
+		// Join allowed columns array into a clean SQL string
+		const selectColumns = allowedColumns.join(', ');
 
 		const placeholders = movieIds.map(() => '?').join(', ');
 
-		const query = `SELECT ${columns} FROM metadata_items WHERE movieId IN (${placeholders})`;
-		const rows = await conn.query(query, [...movieIds]);
+		const query = `SELECT ${selectColumns} FROM metadata_items WHERE movieId IN (${placeholders})`;
+		const rows = await conn.execute(query, [...movieIds]);
 
-		// Send the JSON response
 		res.status(200).json({
 			code: 200,
 			message: "Favories query success",
@@ -222,12 +201,10 @@ const updateSingleMovie = async (req, res) => {
 		slug,
 	} = req.body;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		// Placeholders (?) to securely neutralize SQL injection risks
 		const queryText = `
 		UPDATE metadata_items 
 		SET 
@@ -271,7 +248,6 @@ const updateSingleMovie = async (req, res) => {
 		];
 
 		await conn.query(queryText, values);
-
 		await conn.commit();
 
 		res.status(201).json({
@@ -309,12 +285,13 @@ const updateSingleMovie = async (req, res) => {
 const getMovieFavorite = async (req, res) => {
 	const userId = req.params.userId;
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		const usersData = await conn.query(`SELECT movieFavorites FROM userStore WHERE userId = '${userId}'`);
+		const query = `SELECT movieFavorites FROM userStore WHERE userId = ?`;
+		const usersData = await conn.execute(query, [userId]);
+
 		if (!usersData?.length > 0) {
 			res.status(200).json({
 				code: 200,
@@ -362,12 +339,10 @@ const removeMovieFavorite = async (req, res) => {
 	const { movieId } = req.body;
 
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
-		// Placeholders (?) to securely neutralize SQL injection risks
 		const query = `
 			UPDATE userStore 
 			SET movieFavorites = JSON_REMOVE(
@@ -380,7 +355,7 @@ const removeMovieFavorite = async (req, res) => {
 
 		const values = [movieId, userId, movieId];
 
-		await conn.execute(query, values);
+		await conn.query(query, values);
 
 		res.status(201).json({
 			code: 201,
@@ -417,23 +392,22 @@ const addMovieFavorite = async (req, res) => {
 	const { userId, movieId } = req.body;
 
 
-	// Get a connection from the pool
 	const conn = await pool.getConnection();
 
 	try {
 
 		// Add userStore record if one doesn't exist
-		const usersData = await conn.query(`SELECT * FROM userStore WHERE userId = '${userId}'`);
+		const queryText = `SELECT * FROM userStore WHERE userId = ?`;
+		const usersData = await conn.execute(queryText, [userId]);
 
 		if (usersData?.length === 0) {
-			const result = await conn.query(
+			const result = await conn.execute(
 				"INSERT INTO userStore (userId) VALUES (?)",
 				[userId]
 			);
 			await conn.commit();
 		}
 
-		// Placeholders (?) to securely neutralize SQL injection risks
 		const query = `
 			UPDATE userStore 
 			SET movieFavorites = JSON_ARRAY_APPEND(COALESCE(movieFavorites, '[]'), '$', ?) 
