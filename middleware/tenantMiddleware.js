@@ -16,7 +16,7 @@ const tenantConfigMiddleware = (req, res, next) => {
 		"https://cshardwick.com": "CSHARDWICK",
 		"https://cshapp.hardwick.design": "CSHAPP",
 		"https://vue3db.hardwick.design": "VUE3DB",
-		"http://wavefunctioncreative.com": "WFC",
+		"https://wavefunctioncreative.com": "WFC",
 		"https://csh-react.hardwick.design": "REACT",
 		"http://localhost:5173": "LOCAL"
 	};
