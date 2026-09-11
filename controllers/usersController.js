@@ -401,6 +401,7 @@ const getUserPreferences = async (req, res) => {
 
 /**
  * Update user profiles, must be authenticated via an access token.
+ * This endpoint cannot give admin permissions
  * 
  * @name updateUser
  * @route {PUT} /api/users/:id
@@ -413,7 +414,7 @@ const getUserPreferences = async (req, res) => {
  * @returns {Promise<void>}
  */
 const updateUser = async (req, res) => {
-	const { email, lastName, firstName, admin, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified } = req.body;
+	const { email, lastName, firstName, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified } = req.body;
 
 	const conn = await pool.getConnection();
 
@@ -425,7 +426,6 @@ const updateUser = async (req, res) => {
             email = ?, 
             lastName = ?, 
             firstName = ?, 
-            admin = ?, 
             siteAdmin = ?, 
             siteEditor = ?, 
             contributor = ?, 
@@ -440,7 +440,6 @@ const updateUser = async (req, res) => {
 			email,
 			lastName,
 			firstName,
-			admin,
 			siteAdmin,
 			siteEditor,
 			contributor,

@@ -118,8 +118,9 @@ const sendContactMail = async (req, res) => {
             phone, 
             subject, 
             message, 
-			senderIp) 
-			VALUES (?, ?, ?, ?, ?, ?)
+			senderIp, 
+			clientOrigin) 
+			VALUES (?, ?, ?, ?, ?, ?, ?)
 			`;
 
 			const values = [
@@ -129,6 +130,7 @@ const sendContactMail = async (req, res) => {
 				subject,
 				message,
 				senderIp,
+				hostName
 			];
 
 			await conn.execute(queryText, values);
