@@ -82,6 +82,9 @@ const getMovieData = async (req, res) => {
 		// Join allowed columns array into a clean SQL string
 		const selectColumns = allowedColumns.join(', ');
 
+		const countResult = await conn.query('SELECT COUNT(*) AS total FROM metadata_items WHERE title LIKE ?', [`%${searchTerms}%`]);
+		const totalLikeRows = Number(countResult[0].total);
+
 		const query = `
 				SELECT ${selectColumns} 
 				FROM metadata_items 
@@ -102,6 +105,7 @@ const getMovieData = async (req, res) => {
 			success: true,
 			movies: rows,
 			tableRowCount: cleanRowCount,
+			totalLikeRows: totalLikeRows,
 		});
 
 	} catch {
