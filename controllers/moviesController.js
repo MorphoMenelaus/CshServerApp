@@ -71,8 +71,10 @@ const getMovieData = async (req, res) => {
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
 		await conn.execute("COMMIT");
 
-		const rowCount = await conn.query("SELECT COUNT(*) FROM metadata_items");
-		const cleanRowCount = Number(Object.values(rowCount[0])[0]);
+		const rowCount = await conn.query("SELECT COUNT(*) AS total FROM metadata_items");
+		const cleanRowCount = Number(rowCount[0].total);
+		const likeCount = await conn.query('SELECT COUNT(*) AS total FROM metadata_items WHERE title LIKE ?', [`%${searchTerms}%`]);
+		const totalLikeRows = Number(likeCount[0].total);
 
 		const allowedColumns = [
 			"movieId", "title", "original_title", "tagline", "summary", "studio",
@@ -81,9 +83,6 @@ const getMovieData = async (req, res) => {
 		];
 		// Join allowed columns array into a clean SQL string
 		const selectColumns = allowedColumns.join(', ');
-
-		const countResult = await conn.query('SELECT COUNT(*) AS total FROM metadata_items WHERE title LIKE ?', [`%${searchTerms}%`]);
-		const totalLikeRows = Number(countResult[0].total);
 
 		const query = `
 				SELECT ${selectColumns} 

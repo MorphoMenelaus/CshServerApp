@@ -1,425 +1,401 @@
-const pool = require("../connection/dbConnection");
-const bcrypt = require('bcrypt');
-const { verifyHandler } = require('../services/userService');
+const pool = require("../connection/dbConnection")
+const bcrypt = require("bcrypt")
+const { verifyHandler } = require("../services/userService")
 
 /**
  * Retrieves the full details of all users, if authenticated via an access token.
- * 
+ *
  * @name getUsers
  * @route {GET} /api/users
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const getUsers = async (req, res) => {
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
-	const reqLimit = req.query.limit;
-	const reqOffset = req.query.offset;
+	const reqLimit = req.query.limit
+	const reqOffset = req.query.offset
 
 	try {
-
-		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : 10;
-		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0;
+		const limit = reqLimit && !isNaN(reqLimit) ? Number(reqLimit) : 10
+		const offset = reqOffset && !isNaN(reqOffset) ? Number(reqOffset) : 0
 
 		// Clear snapshot cache to prevent stale data (forces a fresh read)
-		await conn.query("COMMIT");
+		await conn.query("COMMIT")
 
-		const query = `SELECT * FROM users ORDER BY userName DESC LIMIT ? OFFSET ?`;
-		const rows = await conn.execute(query, [limit, offset]);
+		const query = `SELECT * FROM users ORDER BY userName DESC LIMIT ? OFFSET ?`
+		const rows = await conn.execute(query, [limit, offset])
 
-		rows.forEach(row => {
+		rows.forEach((row) => {
 			// password should never be shown in this response
 			// Also remove other things that don't need to be returned for this.
-			delete row.password;
-			delete row.refreshToken;
-			delete row.uiDarkMode;
-			delete row.verificationCode;
-			delete row.verificationExpires;
-		});
+			delete row.password
+			delete row.refreshToken
+			delete row.uiDarkMode
+			delete row.verificationCode
+			delete row.verificationExpires
+		})
 
 		res.status(200).json({
 			code: 200,
 			message: "User list query success",
 			success: true,
 			users: rows,
-		});
-
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Registers a new users. The userName must be unique.
- * 
+ *
  * @name registerUser
  * @route {POST} /api/users/register
  * @access public
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Promise<void>}
  */
 const registerUser = async (req, res) => {
-
-	const { token, userName, email, password } = req.body;
+	const { token, userName, email, password } = req.body
 
 	if (!userName || !email || !password) {
-		let message = "All fields are requied";
+		let message = "All fields are requied"
 		res.status(400).json({
 			code: 400,
 			message: message,
 			success: false,
-		});
-		throw new Error(message);
+		})
+		throw new Error(message)
 	}
 
-	const apiKey = req.tenant.recaptcha.secretKey;
-	const siteKey = req.tenant.recaptcha.siteKey;
-	const hostName = req.tenant.hostName;
+	const apiKey = req.tenant.recaptcha.secretKey
+	const siteKey = req.tenant.recaptcha.siteKey
+	const hostName = req.tenant.hostName
 
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
-
 		let body = {
 			event: {
 				token: token,
 				siteKey: siteKey,
-				expectedAction: "register" // Must match the action string used in frontend component
-			}
+				expectedAction: "register", // Must match the action string used in frontend component
+			},
 		}
 
-		const apiUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${apiKey}&response=${token}`;
+		const apiUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${apiKey}&response=${token}`
 
 		const response = await fetch(apiUrl, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(body)
-		});
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		})
 
-		const data = await response.json();
+		const data = await response.json()
 
 		if (!data?.success) {
 			return res.status(500).json({
 				code: 500,
 				success: false,
-				message: "Google Recaptcha assessment failed"
-			});
+				message: "Google Recaptcha assessment failed",
+			})
 		}
 
 		// Check if the assessment verdict is safe
 		if (data?.score >= 0.5 && data?.hostname === hostName) {
-
 			// Hash password with 10 salt rounds
-			const hashedPassword = await bcrypt.hash(password, 10);
+			const hashedPassword = await bcrypt.hash(password, 10)
 
 			// Verify userName is unique
-			const rows = await conn.query(`SELECT * FROM users WHERE userName = ?`, [userName]);
+			const rows = await conn.query(`SELECT * FROM users WHERE userName = ?`, [userName])
 			if (rows?.length > 0) {
 				res.status(400).json({
 					code: 400,
 					message: "User name already exists",
 					success: false,
-				});
-				throw new Error("User name already exists");
+				})
+				throw new Error("User name already exists")
 			}
 
-			await conn.query(
-				"INSERT INTO users (userName, email, password) VALUES (?, ?, ?)",
-				[userName, email, hashedPassword]
-			);
+			await conn.query("INSERT INTO users (userName, email, password) VALUES (?, ?, ?)", [userName, email, hashedPassword])
 
-			await conn.commit();
+			await conn.commit()
 
-			const sentEmail = await verifyHandler(req, res);
+			const sentEmail = await verifyHandler(req, res)
 
 			if (!sentEmail.success) {
 				res.status(204).json({
 					code: 204,
 					message: "User code not sent",
 					success: false,
-				});
-
+				})
 			} else {
 				res.status(201).json({
 					code: 201,
 					message: "User created successfully",
 					success: true,
-				});
+				})
 			}
-
 		} else {
 			// Block the request
 			res.status(400).json({
 				code: 400,
 				message: "Bot activity detected.",
 				success: false,
-			});
+			})
 		}
-
-	} catch {
+	} catch (error) {
 		res.status(500).json({
+			error: error,
 			code: 500,
 			message: "Registration failed.",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Changes a users password. User must have a correct current passsword.
  * User must be logged in to change password
- * 
+ *
  * @name changePassword
  * @route {POST} /api/users/password
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const changePassword = async (req, res) => {
+	const { userId, currentPassword, password } = req.body
 
-	const { userId, currentPassword, password } = req.body;
-
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
 		if (!currentPassword || !password) {
-			let message = "All fields are requied";
+			let message = "All fields are requied"
 			res.status(400).json({
 				code: 400,
 				message: message,
 				success: false,
-			});
-			throw new Error(message);
+			})
+			throw new Error(message)
 		}
 
 		// Get user record
-		const users = await conn.query(`SELECT * FROM users WHERE userId = ?`, [userId]);
-		let singleUser = users[0];
+		const users = await conn.query(`SELECT * FROM users WHERE userId = ?`, [userId])
+		let singleUser = users[0]
 
-		const isBcryptHash = singleUser.password.startsWith('$2b$') || singleUser.password.startsWith('$2a$');
+		const isBcryptHash = singleUser.password.startsWith("$2b$") || singleUser.password.startsWith("$2a$")
 
 		// Compare hashed password if bcrypt hashed
-		let isPasswordValid;
+		let isPasswordValid
 		if (isBcryptHash) {
-			isPasswordValid = await bcrypt.compare(currentPassword, singleUser.password);
+			isPasswordValid = await bcrypt.compare(currentPassword, singleUser.password)
 		}
 
-		if (!isPasswordValid) return res.status(401).json({
-			code: 401,
-			message: "Invalid credentials",
-			success: false,
-		});
+		if (!isPasswordValid)
+			return res.status(401).json({
+				code: 401,
+				message: "Invalid credentials",
+				success: false,
+			})
 
 		// Hash password with 10 salt rounds
-		const hashedPassword = await bcrypt.hash(password, 10);
+		const hashedPassword = await bcrypt.hash(password, 10)
 
-		await conn.query(
-			`UPDATE users SET password = ? WHERE userId = ?`,
-			[hashedPassword, userId]
-		);
+		await conn.query(`UPDATE users SET password = ? WHERE userId = ?`, [hashedPassword, userId])
 
 		// Remove refresh token from user record
-		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = ? WHERE userId = ?`, ['', userId]);
+		const removeRefreshToken = await conn.query(`UPDATE users SET refreshToken = ? WHERE userId = ?`, ["", userId])
 
-		await conn.commit();
+		await conn.commit()
 
 		res.status(201).json({
 			code: 201,
 			message: "Password changed successfully. Please log in again.",
 			success: true,
-		});
-
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Password change failed.",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Retrieves the full details of a single user, if authenticated via an access token.
- * 
+ *
  * @name getUser
  * @route {GET} /api/users/:id
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const getUser = async (req, res) => {
-
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = ?`, [req.params.id])
 
-
-		const rows = await conn.query(`SELECT * FROM users WHERE userId = ?`, [req.params.id]);
-
-		rows.forEach(row => {
+		rows.forEach((row) => {
 			// password should never be shown in this response
-			delete row.password;
-			delete row.refreshToken;
-		});
+			delete row.password
+			delete row.refreshToken
+		})
 
-		let singleUser = rows[0];
+		let singleUser = rows[0]
 
 		res.status(200).json({
 			code: 200,
 			message: "Database query success",
 			success: true,
 			user: singleUser,
-		});
-
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Retrieves the full details of users WHERE userName LIKE %keyword%, if authenticated via an access token.
- * 
+ *
  * @name findUserByName
  * @route {GET} /api/users/name/:userName
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const findUserByName = async (req, res) => {
+	const searchTerms = req.params.userName || ""
 
-	const searchTerms = req.params.userName || "";
-
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
+		const query = `SELECT * FROM users WHERE userName LIKE ?`
+		const rows = await conn.query(query, [`%${searchTerms}%`])
 
-		const query = `SELECT * FROM users WHERE userName LIKE ?`;
-		const rows = await conn.query(query, [`%${searchTerms}%`]);
-
-		rows.forEach(row => {
+		rows.forEach((row) => {
 			// password should never be shown in this response
-			delete row.password;
-			delete row.refreshToken;
-		});
+			delete row.password
+			delete row.refreshToken
+		})
 
 		res.status(200).json({
 			code: 200,
 			message: `Database query - ${searchTerms} -  success`,
 			success: true,
 			users: rows,
-		});
-
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Retrieves user preferences, if authenticated via an access token.
- * 
+ *
  * @name getUserPreferences
  * @route {GET} /api/users/prefs/:id
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const getUserPreferences = async (req, res) => {
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
-
-		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = ?`, [req.params.id]);
+		const rows = await conn.query(`SELECT * FROM userPreferences WHERE userId = ?`, [req.params.id])
 
 		res.status(200).json({
 			code: 200,
 			message: "User Preferences Success",
 			success: true,
-			rows: rows
-		});
-
+			rows: rows,
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Database query failed",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Update user profiles, must be authenticated via an access token.
  * This endpoint cannot give admin permissions
- * 
+ *
  * @name updateUser
  * @route {PUT} /api/users/:id
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const updateUser = async (req, res) => {
-	const { email, lastName, firstName, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified } = req.body;
+	const { email, lastName, firstName, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified } = req.body
 
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
-
 		const queryText = `
         UPDATE users 
         SET 
@@ -434,27 +410,15 @@ const updateUser = async (req, res) => {
             userNotes = ?, 
 			verified = ? 
         WHERE userId = ?
-    `;
+    `
 
-		const values = [
-			email,
-			lastName,
-			firstName,
-			siteAdmin,
-			siteEditor,
-			contributor,
-			uiDarkMode,
-			locationDefault,
-			userNotes,
-			verified,
-			req.params.id
-		];
+		const values = [email, lastName, firstName, siteAdmin, siteEditor, contributor, uiDarkMode, locationDefault, userNotes, verified, req.params.id]
 
-		await conn.query(queryText, values);
-		await conn.commit();
+		await conn.query(queryText, values)
+		await conn.commit()
 
-		const rows = await conn.query(`SELECT * FROM users WHERE userId = ?`, [req.params.id]);
-		let singleUser = rows[0];
+		const rows = await conn.query(`SELECT * FROM users WHERE userId = ?`, [req.params.id])
+		let singleUser = rows[0]
 
 		// restructure user data before returning
 		let permissions = {
@@ -462,151 +426,143 @@ const updateUser = async (req, res) => {
 			siteAdmin: singleUser.siteAdmin === 1 ? true : false,
 			siteEditor: singleUser.siteEditor === 1 ? true : false,
 			contributor: singleUser.contributor === 1 ? true : false,
-			verified: singleUser.verified === 1 ? true : false
+			verified: singleUser.verified === 1 ? true : false,
 		}
 
-		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false;
-		singleUser.permissions = permissions;
-		delete singleUser.password;
-		delete singleUser.refreshToken;
-		delete singleUser.admin;
-		delete singleUser.siteAdmin;
-		delete singleUser.siteEditor;
-		delete singleUser.contributor;
-		delete singleUser.verified;
+		singleUser.uiDarkMode = singleUser.uiDarkMode === 1 ? true : false
+		singleUser.permissions = permissions
+		delete singleUser.password
+		delete singleUser.refreshToken
+		delete singleUser.admin
+		delete singleUser.siteAdmin
+		delete singleUser.siteEditor
+		delete singleUser.contributor
+		delete singleUser.verified
 
 		res.status(201).json({
 			code: 201,
 			message: "User updated successfully",
 			success: true,
 			user: singleUser,
-		});
-
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Update failed.",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Deletes a user, if authenticated via an access token.
- * Any log entries inserted by this user will remain. 
- * 
+ * Any log entries inserted by this user will remain.
+ *
  * @name deleteUser
  * @route {DELETE} /api/users/:id
  * @access Restricted (Requires Bearer Token)
  * @auth Requires JWT access token in the Authorization header.
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  * @returns {Promise<void>}
  */
 const deleteUser = async (req, res) => {
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
-
 		// Delete user records
-		await conn.query(`DELETE FROM users WHERE userId = ?`, [req.params.id]);
-		await conn.query(`DELETE FROM userStore WHERE userId = ?`, [req.params.id]);
+		await conn.query(`DELETE FROM users WHERE userId = ?`, [req.params.id])
+		await conn.query(`DELETE FROM userStore WHERE userId = ?`, [req.params.id])
 
 		res.status(200).json({
 			code: 200,
 			message: `User Deleted`,
 			success: true,
-		});
-
+		})
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Delete failed",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
 /**
  * Verify a new users email address.
- * 
+ *
  * @name verifyCode
  * @route {POST} /api/users/verify
  * @access public
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  * @returns {Promise<void>}
  */
 const verifyCode = async (req, res) => {
-
-	const userName = req.body.userName;
-	const verificationCode = Number(req.body.verificationCode);
+	const userName = req.body.userName
+	const verificationCode = Number(req.body.verificationCode)
 
 	if (!userName || !verificationCode) {
-		let message = "All params are requied";
+		let message = "All params are requied"
 		res.status(400).json({
 			code: 400,
 			message: message,
 			success: false,
-		});
-		throw new Error(message);
+		})
+		throw new Error(message)
 	}
 
-	const conn = await pool.getConnection();
+	const conn = await pool.getConnection()
 
 	try {
-
 		// Get user record by email
-		const users = await conn.query(`SELECT * FROM users WHERE userName = ?`, [userName]);
-		const singleUser = users[0];
+		const users = await conn.query(`SELECT * FROM users WHERE userName = ?`, [userName])
+		const singleUser = users[0]
 
-		const codeValid = Date.parse(singleUser?.verificationExpires) > Date.now();
+		const codeValid = Date.parse(singleUser?.verificationExpires) > Date.now()
 
 		if (Number(singleUser.verificationCode) === verificationCode && codeValid) {
-
 			const queryText = `
 			UPDATE users 
 			SET 
 			verified = ? 
 			WHERE userName = ?
-			`;
-			const values = [1, userName];
+			`
+			const values = [1, userName]
 
-			await conn.query(queryText, values);
-			await conn.commit();
+			await conn.query(queryText, values)
+			await conn.commit()
 
 			res.status(201).json({
 				code: 201,
 				message: "Code verified successfully",
 				success: true,
-			});
-
+			})
 		} else {
 			res.status(401).json({
 				code: 401,
 				message: "Verification code not valid or expired.",
 				success: false,
-			});
+			})
 		}
-
 	} catch {
 		res.status(500).json({
 			code: 500,
 			message: "Verification failed.",
 			success: false,
-		});
+		})
 	} finally {
 		// Crucial: Always release the connection back to the pool
-		if (conn) conn.release();
+		if (conn) conn.release()
 	}
 }
 
